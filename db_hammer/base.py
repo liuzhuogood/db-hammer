@@ -1,6 +1,7 @@
 import datetime
+import logging
 from enum import Enum
-
+from db_hammer.csv import start as csv_start
 from db_hammer.util.date import date_to_str
 
 
@@ -34,8 +35,10 @@ class BaseConnection(object):
         """
 
         count_sql = "select COUNT(0) from ( %s ) temp_count" % sql
+        logging.debug("execute sql ==>:" + count_sql.replace("\n", " "))
         self.cursor.execute(count_sql)
         data = self.cursor.fetchone()
+        logging.debug("fetch rows  <==:" + str(len(data)))
         num = data[0] // page_size
         if data[0] > page_size * num:
             num = num + 1
@@ -66,9 +69,11 @@ class BaseConnection(object):
                      ( %s ) temp_page 
                    where limit %d,%d
                    """ % (sql, end, start)
+
+        logging.debug("execute sql ==>:" + page_sql.replace("\n", " "))
         self.cursor.execute(page_sql)
         data = self.cursor.fetchall()
-
+        logging.debug("fetch rows  <==:" + str(len(data)))
         if add_headers:
             col_names = self.cursor.description
             list(data).insert(col_names, 0)
@@ -101,8 +106,10 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
+        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
         self.cursor.execute(sql)
         data = self.cursor.fetchone()
+        logging.debug("fetch rows  <==:" + str(len(data)))
         if data is None:
             return None
         return str(data[0])
@@ -113,8 +120,10 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
+        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
         self.cursor.execute(sql)
         data = self.cursor.fetchall()
+        logging.debug("fetch rows  <==:" + str(len(data)))
         return data
 
     def select_dict_list(self, sql: str) -> list:
@@ -123,8 +132,10 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
+        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
         self.cursor.execute(sql)
         data = self.cursor.fetchall()
+        logging.debug("fetch rows  <==:" + str(len(data)))
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
@@ -155,22 +166,28 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
+        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
         self.cursor.execute(sql)
         i = self.cursor.rowcount
+        logging.debug("fetch rows  <==:" + str(len(data)))
         return i
 
     def close(self):
         self.conn.close()
+        logging.debug("conn close")
 
     def rollback(self):
         """回滚事务"""
+        logging.debug("rollback start")
         self.conn.rollback()
-        return
+        logging.debug("rollback end")
 
     def commit(self):
         """提交事务，如果有对数据库进更新，需要手动提交事务
         """
+        logging.debug("commit start")
         self.conn.commit()
+        logging.debug("commit end")
         return
 
     def db_data_type_mapping(self):
@@ -258,7 +275,7 @@ class BaseConnection(object):
 
     def gen_update_dict_sql(self, dict_data: dict, table_name: str, where: str):
         """
-        根据字典更新表
+        根据字典生成Update语句
         :param dict_data:  列新字典
         :param table_name: 表名
         :param where: 带上where条件
@@ -297,6 +314,7 @@ class BaseConnection(object):
                 values[column_name] = t.replace("${VALUE}", self.convert_str(v))
 
     def select_insert_sql(self, sql: str, table_name: str) -> list:
+        """根据SQL查询数据并生成Insert语句"""
         records = self.select_dict_list(sql=sql)
         sql_list = []
         for r in records:
@@ -306,3 +324,27 @@ class BaseConnection(object):
 
     def convert_str(self, s: str):
         return str(s)
+
+    def export_data_file(self, sql, dir_path, file_mode="txt", pack_size=500000, add_header=True, data_split_chars=',',
+                         data_close_chars='"', encoding="utf-8"):
+        """导出数据文件
+        @:param sql 导出时的查询SQL
+        @:param dir_path 导出的数据文件存放目录
+        @:param file_mode 导出文件格式：txt|gz|csv
+        @:param add_header 数据文件是否增加表头
+        @:param pack_size  每个数据文件大小，默认为50万行，强烈建议分割数据文件，单文件写入速度会越来越慢
+        @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
+        @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
+        @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
+        @:param encoding 文件编码格式，默认为utf-8
+        """
+        csv_start(cursor=self.cursor,
+                  sql=sql,
+                  path=dir_path,
+                  bachSize=10000,
+                  PACK_SIZE=pack_size,
+                  file_mode=file_mode,
+                  add_header=add_header,
+                  CSV_SPLIT=data_split_chars,
+                  CSV_FIELD_CLOSE=data_close_chars,
+                  encoding=encoding)
