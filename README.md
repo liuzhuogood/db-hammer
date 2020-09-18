@@ -1,6 +1,6 @@
 # db-hammer
-##### [[中文](./README.md)] [[English](./README-EN.md)] 
-**db-hammer** 是个简单数据库工具库，在 Python DB-API上提供一些高级方法；方便大家经常做数据库查询。
+##### [[中文](https://github.com/liuzhuogood/db-hammer/blob/master/README.md)] [[English](https://github.com/liuzhuogood/db-hammer/blob/master/README-EN.md)] 
+**[db-hammer](https://github.com/liuzhuogood/db-hammer)** 是个简单数据库工具库，在 Python DB-API上提供一些高级方法；方便大家经常做数据库查询。
 提供方便的导出数据功能，可高性能、稳定的导出超大表数据。
 目前已对 MySQL、Oracle、MSSQL、PostgreSQL 数据进行封装，封装其他结构化数据库也很简单。
 ### 安装
@@ -131,4 +131,6 @@ db_hammer.util.keep
 db_hammer.util.sim_email
 
 ```
+
+
 
