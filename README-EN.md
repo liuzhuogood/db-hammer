@@ -1,5 +1,5 @@
 # db-hammer
-##### [[中文]()] [[English]()] 
+##### [[中文](./README.md)] [[English](./README-EN.md)] 
 **db-hammer** It is a simple database tool library that provides some advanced methods on the Python DB-API; it is convenient for you to do database queries frequently.
 Provides a convenient data export function, which can export super-large table data with high performance and stability.
 At present, MySQL, Oracle, MSSQL, and PostgreSQL data have been packaged, and it is also very simple to package other structured databases.
