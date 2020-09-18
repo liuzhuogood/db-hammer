@@ -1,9 +1,9 @@
 # db-hammer
 [[中文](./README.md)] [[English](/README-EN.md)] 
-**db-hammer** 是个简单数据库工具库，在 Python DB-API上提供一些高级方法；方便大家经常做数据库查询。
-提供方便的导出数据功能，可高性能、稳定的导出超大表数据。
-目前已对 MySQL、Oracle、MSSQL、PostgreSQL 数据进行封装，封装其他结构化数据库也很简单。
-### 安装
+**db-hammer** It is a simple database tool library that provides some advanced methods on the Python DB-API; it is convenient for you to do database queries frequently.
+Provides a convenient data export function, which can export super-large table data with high performance and stability.
+At present, MySQL, Oracle, MSSQL, and PostgreSQL data have been packaged, and it is also very simple to package other structured databases.
+### Install
 ``` shell
 pip3 install db-hammer
 ```
@@ -41,7 +41,7 @@ with MySQLConnection(**db_conf) as db:
 ```
 
 
-### 连接其他数据库
+### Connect to other database
 ``` python
 from db_hammer.oracle import OracleConnection
 from db_hammer.postgresql import PostgreSQLConnection
@@ -54,81 +54,80 @@ db_psql = PostgreSQLConnection(**db_conf)
 db_mssql = MsSQLConnection(**db_conf)
 
 ```
-### 导出数据库数据
+### Export database data to files
 ``` python
 with MySQLConnection(**mysql_conf) as db:
     db.export_data_file(sql="select * from exam_rule_b", dir_path="./export_data", file_mode="csv")
 ```
 
-根据SQL:`select * from exam_rule_b`导出到`./export_data`，默认为分割文件，导出文件类型支持：`txt`、`csv`、`gz`，可以传入文件编码格式：`encoding`
+According to SQL: `select * from exam_rule_b` export to `./export_data`, the default is a split file, the export file type supports: `txt`, `csv`, `gz`, file encoding format: `encoding`
 
-游标方式导出，实际测试大表导出，20个G都没有问题。且导出性能较高，使用`gz`格式导出时，自动压缩，且很多工具支持直接读取`gz`文本。
+Export in cursor mode, and actually test the export of large tables. And the export performance is high. When exporting in the `gz` format, it is automatically compressed, and many tools support direct reading of the `gz` text.
 
 
-### 开启日志
+### Logging
 ``` python
 import logging
 logging.basicConfig(level=logging.DEBUG,
                     format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                     datefmt='%Y-%m-%d %H:%M:%S')
 ```
-### 常用数据库方法列表
+### List of methods
 ``` python
-# 根据sql获取页数
+# Get the number of pages according to sql
 select_page_size(sql: str, page_size=50)
 
-# 获取分页列表数据,列表字典形式返回
+# Get the data of the paging list, return the list in dictionary form
 select_page_list(sql: str, page_size=50, page_start=1, **kwargs)
 
-# 获取分页列表数据,列表字典形式返回
+# Get the data of the paging list, return the list in dictionary form
 select_dict_page_list(sql: str, page_size=50, page_start=1, **kwargs)
 
-# 获取第一列第一行的值
+# Get the value of the first column and first row
 select_value(sql: str)
 
-# 获取列表数据,列表方式返回
+# Get list data, return list
 select_list(sql: str)
 
-# 获取所有列表数据，列表字典形式返回
+# Get all list data, return list dictionary form
 select_dict_list(sql: str)
 
-# 获取第一行数据，字典形式返回
+# Get the first row of data, return in dictionary form
 select_dict(sql: str)
 
-# 执行SQL,并返回影响行数
+# Execute SQL and return the number of affected rows
 execute(sql: str)
 
-# 关闭连接
+# Close the connection
 close()
 
-# 回滚事务
+# Rollback transaction
 rollback()
 
-# 提交事务
+# Commit transaction
 commit()
 
-# 根据字典生成 Insert SQL
+# Generate Insert SQL from dictionary
 gen_insert_dict_sql(dict_data: dict, table_name: str)
 
-# 根据字典来生成 Update SQL
+# Generate Update SQL according to the dictionary
 gen_update_dict_sql(dict_data: dict, table_name: str, where: str)
 
-# 根据sql语句把数据生成 Insert SQL
+# Generate Insert SQL based on sql statement
 select_insert_sql(sql: str, table_name: str)
 ```
 
-## 其他小工具
+## Other utils
 ``` python
-# 执行本地命令
+# Execute local commands
 db_hammer.util.cmd
-# 简单的日期转换
+# Simple date conversion
 db_hammer.util.date
-# 获取文件和目录工具（好用）
+# Get file and directory tools (easy to use)
 db_hammer.util.file
-# 简单保存键值工具
+# Simple save key value tool
 db_hammer.util.keep
-# 一个简单的收发邮件工具
+# A simple tool for sending and receiving emails
 db_hammer.util.sim_email
 
 ```
-
