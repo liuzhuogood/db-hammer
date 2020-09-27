@@ -73,7 +73,8 @@ class PostgreSQLConnection(BaseConnection):
     def convert_str(self, s: str):
         return s.replace("'", "''")
 
-    def export_data_file(self, sql, dir_path, file_mode="gz", pack_size=500000, add_header=True, data_split_chars=',',
+    def export_data_file(self, sql, dir_path, file_mode="gz", pack_size=500000, bachSize=10000, add_header=True,
+                         data_split_chars=',',
                          data_close_chars='"', encoding="utf-8"):
         """导出数据文件
         @:param sql 导出时的查询SQL
@@ -81,8 +82,8 @@ class PostgreSQLConnection(BaseConnection):
         @:param file_mode 导出文件格式：txt|gz|csv
         @:param add_header 数据文件是否增加表头
         @:param pack_size  每个数据文件大小，默认为50万行，强烈建议分割数据文件，单文件写入速度会越来越慢
+        @:param bachSize   游标大小
         @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
-        @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
         @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
         @:param encoding 文件编码格式，默认为utf-8
         """
@@ -91,7 +92,7 @@ class PostgreSQLConnection(BaseConnection):
         csv_start(cursor=cursor,
                   sql=sql,
                   path=dir_path,
-                  bachSize=10000,
+                  bachSize=bachSize,
                   PACK_SIZE=pack_size,
                   file_mode=file_mode,
                   add_header=add_header,
