@@ -5,7 +5,7 @@ with open("./README.md", "rb") as fh:
 
 setup(
     name='db-hammer',
-    version='0.0.5',
+    version='0.0.6',
     description='database tools；数据库操作',
     author='hammer',
     author_email='liuzhuogood@foxmail.com',
