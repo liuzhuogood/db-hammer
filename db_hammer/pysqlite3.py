@@ -6,7 +6,10 @@ class Sqlite3Connection(BaseConnection):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        if kwargs.get("database", None) is None:
+        database = kwargs.get("database", None)
+        if database is None:
             raise Exception("database")
-        self.conn = sqlite3.connect(kwargs["database"], **kwargs)
+        del kwargs["database"]
+        self.conn = sqlite3.connect(database=database, **kwargs)
         self.cursor = self.conn.cursor()
+

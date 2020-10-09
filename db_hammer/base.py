@@ -169,7 +169,7 @@ class BaseConnection(object):
         logging.debug("execute sql ==>:" + sql.replace("\n", " "))
         self.cursor.execute(sql)
         i = self.cursor.rowcount
-        logging.debug("fetch rows  <==:" + i)
+        logging.debug("fetch rows  <==:" + str(i))
         return i
 
     def close(self):
