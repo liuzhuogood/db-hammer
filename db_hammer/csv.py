@@ -15,7 +15,18 @@ def get_headers(cursor):
     return cc
 
 
-def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPLIT, CSV_FIELD_CLOSE, encoding):
+def count_rows(cursor, sql):
+    count_sql = f"SELECT COUNT(0) FROM ({sql}) tmp_count"
+    logging.debug("execute sql ==>:" + count_sql.replace("\n", " "))
+    cursor.execute(count_sql)
+    data = cursor.fetchone()
+    logging.debug("fetch rows  <==:" + str(len(data)))
+    num = data[0]
+    return int(num)
+
+
+def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPLIT, CSV_FIELD_CLOSE, encoding,
+          callback):
     try:
         os.makedirs(path, exist_ok=True)
         logging.info(f"export path：%s" % path)
@@ -27,6 +38,10 @@ def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPL
         CACHE_ROWS = 0
         write_f = None
         c_count = 0
+        total = 0
+        if callback is not None:
+            total = count_rows(cursor, sql)
+            callback(c_count, total)
         while len(csv_data) > 0:
             logging.debug("export row::" + str(c_count))
             CACHE_ROWS += len(csv_data)
@@ -39,6 +54,8 @@ def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPL
                 CACHE_ROWS = 0
             c_count += len(csv_data)
             csv_data = cursor.fetchmany(int(bachSize))
+            if callback is not None:
+                callback(c_count, total)
         if write_f is not None:
             write_f.flush()
             write_f.close()

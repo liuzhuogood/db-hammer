@@ -327,7 +327,7 @@ class BaseConnection(object):
 
     def export_data_file(self, sql, dir_path, file_mode="txt", pack_size=500000, bachSize=10000, add_header=True,
                          data_split_chars=',',
-                         data_close_chars='"', encoding="utf-8"):
+                         data_close_chars='"', encoding="utf-8", outingCallback=None):
         """导出数据文件
         @:param sql 导出时的查询SQL
         @:param dir_path 导出的数据文件存放目录
@@ -338,6 +338,7 @@ class BaseConnection(object):
         @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
         @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
         @:param encoding 文件编码格式，默认为utf-8
+        @:param outingCallback 导出过程中的回调方法
         """
         csv_start(cursor=self.cursor,
                   sql=sql,
@@ -348,4 +349,5 @@ class BaseConnection(object):
                   add_header=add_header,
                   CSV_SPLIT=data_split_chars,
                   CSV_FIELD_CLOSE=data_close_chars,
-                  encoding=encoding)
+                  encoding=encoding,
+                  callback=outingCallback)

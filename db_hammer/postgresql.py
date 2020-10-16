@@ -1,6 +1,6 @@
 import uuid
 
-from .base import BaseConnection
+from db_hammer.base import BaseConnection
 from db_hammer.csv import start as csv_start
 
 try:
@@ -75,7 +75,7 @@ class PostgreSQLConnection(BaseConnection):
 
     def export_data_file(self, sql, dir_path, file_mode="gz", pack_size=500000, bachSize=10000, add_header=True,
                          data_split_chars=',',
-                         data_close_chars='"', encoding="utf-8"):
+                         data_close_chars='"', encoding="utf-8", outingCallback=None):
         """导出数据文件
         @:param sql 导出时的查询SQL
         @:param dir_path 导出的数据文件存放目录
@@ -86,6 +86,7 @@ class PostgreSQLConnection(BaseConnection):
         @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
         @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
         @:param encoding 文件编码格式，默认为utf-8
+        @:param outingCallback 导出过程中的回调方法
         """
         # 要使用服务器游标，本地游标会内存溢出
         cursor = self.conn.cursor(name="export_data_" + str(uuid.uuid1()))
@@ -98,5 +99,6 @@ class PostgreSQLConnection(BaseConnection):
                   add_header=add_header,
                   CSV_SPLIT=data_split_chars,
                   CSV_FIELD_CLOSE=data_close_chars,
-                  encoding=encoding)
+                  encoding=encoding,
+                  callback=outingCallback)
         cursor.close()

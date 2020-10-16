@@ -1,4 +1,4 @@
-from .base import BaseConnection, DataType
+from db_hammer.base import BaseConnection
 
 try:
     import Cython
@@ -29,7 +29,7 @@ class MsSQLConnection(BaseConnection):
         port = kwargs.get("port", 1433)
         charset = kwargs.get("charset", "utf8")
         tds_version = kwargs.get("tds_version", "7.0")
-        super().__init__(port=port, charset=charset, tds_version=tds_version, **kwargs)
+        super().__init__(**kwargs)
         self.conn = pymssql.connect(server=kwargs["host"], user=kwargs["user"],
                                     password=kwargs["pwd"],
                                     port=port,

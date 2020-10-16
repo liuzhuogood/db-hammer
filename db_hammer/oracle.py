@@ -1,7 +1,7 @@
 import os
 import sys
 
-from .base import BaseConnection
+from db_hammer.base import BaseConnection
 
 try:
     import cx_Oracle
