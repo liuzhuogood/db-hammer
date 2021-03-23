@@ -66,5 +66,5 @@ class Keep:
 
 if __name__ == '__main__':
     k = Keep()
-    k.set("AAA", "121212")
+    k.set("AAA", "1212你好12")
     print(k.get("AAA"))

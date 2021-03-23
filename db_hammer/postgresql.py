@@ -100,5 +100,6 @@ class PostgreSQLConnection(BaseConnection):
                   CSV_SPLIT=data_split_chars,
                   CSV_FIELD_CLOSE=data_close_chars,
                   encoding=encoding,
-                  callback=outingCallback)
+                  callback=outingCallback,
+                  log=self.log)
         cursor.close()

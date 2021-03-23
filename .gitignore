@@ -1,4 +1,4 @@
 *.sh
 /dist/
-/test/
+/db_test/
 /db_hammer.egg-info/

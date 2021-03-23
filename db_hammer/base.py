@@ -1,7 +1,13 @@
 import datetime
 import logging
+import re
 from enum import Enum
+
 from db_hammer.csv import start as csv_start
+from db_hammer.entity_util import update_sql, insert_sql, delete_sql, entity_list, where_entity, where_like_entity, \
+    order_by_pagination, get_entity_primary_key
+from db_hammer.page import PageOutput, PageInput
+from db_hammer.sql_exception import SqlException, FetchRowsException, ExistException
 from db_hammer.util.date import date_to_str
 
 
@@ -15,6 +21,7 @@ class BaseConnection(object):
         """
         :param kwargs:
         """
+        self.log = kwargs.get("log", logging.getLogger(__name__))
         self.Db_NAME = kwargs.get("db_name")
         self.conn = None  # type:Connect
         self.cursor = None  # type:cursor
@@ -26,23 +33,41 @@ class BaseConnection(object):
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
 
-    def select_page_size(self, sql: str, page_size=50) -> int:
+    def select_page_size(self, sql: str, params: dict = None, page_size=50) -> (int, int):
         """
-        根据sql获取页数
+        根据sql获取 (页数,行数)
+        :param params:
         :param sql:
         :param page_size: 分页大小
         :return: 页数
         """
 
         count_sql = "select COUNT(0) from ( %s ) temp_count" % sql
-        logging.debug("execute sql ==>:" + count_sql.replace("\n", " "))
-        self.cursor.execute(count_sql)
+        count_sql = self.sql_params(count_sql, params)
+        self.log.debug("Execute SQL :" + count_sql.replace("\n", " "))
+        self.log.debug("Execute Params :" + str(params))
+        self.cursor.execute(count_sql, params)
         data = self.cursor.fetchone()
-        logging.debug("fetch rows  <==:" + str(len(data)))
-        num = data[0] // page_size
-        if data[0] > page_size * num:
+        count_rows = data[0]
+        self.log.debug("fetch rows:" + str(len(data)))
+        num = count_rows // page_size
+        if count_rows > page_size * num:
             num = num + 1
-        return num
+        return num, count_rows
+
+    def sql_params(self, sql: str, params: dict):
+        if params is None:
+            return sql
+        ps = re.findall('(?<!\w):\w+', sql)
+        start = 0
+        for p in ps:
+            if p[1:] not in params or len(p) == 1:
+                raise SqlException(f"SQL语句中参数[{p}]没有传值")
+            start = sql.find(p, start)
+            param = "%(" + p[1:] + ")s"
+            sql = sql[:start] + param + sql[start + len(p):]
+            start += len(param)
+        return sql
 
     def select_page_list(self, sql: str, page_size=50, page_start=1, **kwargs) -> list:
         """
@@ -56,6 +81,7 @@ class BaseConnection(object):
         add_headers: 是否添加表头 defalut:False
         :return:
         """
+        params = kwargs.get("params", None)
         page_end = kwargs["page_end"]
         if page_end is None:
             page_end = page_start + 1
@@ -64,16 +90,14 @@ class BaseConnection(object):
             add_headers = False
 
         start = page_size * (page_start - 1)
-        end = page_size * (page_end - 1)
-        page_sql = """select * FROM (select temp_page.*, rownum row_id from 
-                     ( %s ) temp_page 
-                   where limit %d,%d
-                   """ % (sql, end, start)
-
-        logging.debug("execute sql ==>:" + page_sql.replace("\n", " "))
-        self.cursor.execute(page_sql)
+        end = page_size * (page_end - page_start)
+        page_sql = """SELECT * FROM ( %s ) temp_page LIMIT %d,%d """ % (sql, start, end)
+        page_sql = self.sql_params(page_sql, params)
+        self.log.debug("Execute SQL :" + page_sql.replace("\n", " "))
+        self.log.debug("Execute Params :" + str(params))
+        self.cursor.execute(page_sql, params)
         data = self.cursor.fetchall()
-        logging.debug("fetch rows  <==:" + str(len(data)))
+        self.log.debug("fetch rows:" + str(len(data)))
         if add_headers:
             col_names = self.cursor.description
             list(data).insert(col_names, 0)
@@ -89,63 +113,67 @@ class BaseConnection(object):
         :return:
         """
 
-        page_end = kwargs["page_end"]
-        if page_end is None:
-            page_end = page_start + 1
-        add_headers = kwargs["add_headers"]
-        if add_headers is None:
-            add_headers = False
-
-        data = self.select_page_list(sql, page_size, page_start, page_end=page_end, add_headers=add_headers)
+        page_end = kwargs.get("page_end", page_start + 1)
+        add_headers = kwargs.get("add_headers", False)
+        params = kwargs.get("params", None)
+        data = self.select_page_list(sql, page_size, page_start, params=params,
+                                     page_end=page_end,
+                                     add_headers=add_headers)
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
-    def select_value(self, sql: str) -> str:
+    def select_value(self, sql: str, params=None) -> str:
         """
         获取第一列第一行的值
         :param sql:
         :return:
         """
-        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
-        self.cursor.execute(sql)
+        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
+        _sql = self.sql_params(sql, params)
+        self.cursor.execute(_sql, params)
         data = self.cursor.fetchone()
-        logging.debug("fetch rows  <==:" + str(len(data)))
         if data is None:
             return None
         return str(data[0])
 
-    def select_list(self, sql: str) -> list:
+    def select_list(self, sql: str, params=None) -> list:
         """
         获取列表数据,列表方式返回
         :param sql:
         :return:
         """
-        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
-        self.cursor.execute(sql)
+        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
+        self.log.debug("Execute Params :" + str(params))
+        _sql = self.sql_params(sql, params)
+        self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
-        logging.debug("fetch rows  <==:" + str(len(data)))
+        self.log.debug("fetch rows:" + str(len(data)))
         return data
 
-    def select_dict_list(self, sql: str) -> list:
+    def select_dict_list(self, sql: str, params=None) -> list:
         """
         获取查询语句列表数据，以字典方式返回: List<dict>
+        :param params:
         :param sql:
         :return:
         """
-        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
-        self.cursor.execute(sql)
+        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
+        self.log.debug("Execute Params :" + str(params))
+        _sql = self.sql_params(sql, params)
+        self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
-        logging.debug("fetch rows  <==:" + str(len(data)))
+        self.log.debug("fetch rows:" + str(len(data)))
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
-    def select_dict(self, sql: str) -> dict:
+    def select_dict(self, sql: str, params=None) -> dict:
         """
         获取字典数据，以字典方式返回: dict
+        :param params:
         :param sql:
         :return:
         """
-        data = self.select_dict_list(sql)
+        data = self.select_dict_list(sql, params)
         if data is None or len(data) == 0:
             return None
         return data[0]
@@ -160,34 +188,36 @@ class BaseConnection(object):
             r_list.append(row)
         return r_list
 
-    def execute(self, sql: str) -> int:
+    def execute(self, sql: str, params=None) -> int:
         """
         执行sql,并返回影响行数
+        :param params:
         :param sql:
         :return:
         """
-        logging.debug("execute sql ==>:" + sql.replace("\n", " "))
-        self.cursor.execute(sql)
+        # self.log.debug("Execute SQL :" + sql.replace("\n", " "))
+        _sql = self.sql_params(sql, params)
+        self.cursor.execute(_sql, params)
         i = self.cursor.rowcount
-        logging.debug("fetch rows  <==:" + str(i))
+        self.log.debug("fetch rows:" + str(i))
         return i
 
     def close(self):
         self.conn.close()
-        logging.debug("conn close")
+        self.log.debug("conn close")
 
     def rollback(self):
         """回滚事务"""
-        logging.debug("rollback start")
+        self.log.debug("rollback start")
         self.conn.rollback()
-        logging.debug("rollback end")
+        self.log.debug("rollback end")
 
     def commit(self):
         """提交事务，如果有对数据库进更新，需要手动提交事务
         """
-        logging.debug("commit start")
+        self.log.debug("commit start")
         self.conn.commit()
-        logging.debug("commit end")
+        self.log.debug("commit end")
         return
 
     def db_data_type_mapping(self):
@@ -210,7 +240,7 @@ class BaseConnection(object):
             dd = dt.split(",")
             if str(db_type).upper() in dd:
                 return dtm[dt]
-        raise Exception("不支持的数据库类：" + db_type)
+        raise Exception("不支持的数据库类：" + str(db_type))
 
     def db_column_sql(self, table_name):
         """
@@ -227,16 +257,16 @@ class BaseConnection(object):
             DATA_PRECISION ：精度
         """
         return f"""
-        SELECT 
-         COLUMN_NAME AS COLUMN_NAME,
-        DATA_TYPE AS DATA_TYPE,
-        COLUMN_COMMENT AS COMMENTS,
-        CHARACTER_MAXIMUM_LENGTH AS DATA_LENGTH,
-        NUMERIC_PRECISION AS DATA_PRECISION
-         FROM INFORMATION_SCHEMA.COLUMNS T
-         WHERE 
-         TABLE_NAME = '{table_name}' AND TABLE_SCHEMA = '{self.Db_NAME}'
-        """
+            SELECT 
+             COLUMN_NAME AS COLUMN_NAME,
+            DATA_TYPE AS DATA_TYPE,
+            COLUMN_COMMENT AS COMMENTS,
+            CHARACTER_MAXIMUM_LENGTH AS DATA_LENGTH,
+            NUMERIC_PRECISION AS DATA_PRECISION
+             FROM INFORMATION_SCHEMA.COLUMNS T
+             WHERE 
+             TABLE_NAME = '{table_name}' AND TABLE_SCHEMA = '{self.Db_NAME}'
+            """
 
     def gen_insert_dict_sql(self, dict_data: dict, table_name: str):
         """
@@ -251,7 +281,7 @@ class BaseConnection(object):
             for c in columns:
                 column_name = c.get("COLUMN_NAME", None) if c.get("COLUMN_NAME", None) is not None else c["column_name"]
                 data_type = c.get("DATA_TYPE", None) if c.get("DATA_TYPE", None) is not None else c["data_type"]
-                self.__get_column_values(column_name, data_type, dict_data, values)
+                values[column_name] = self.__get_column_value(data_type=data_type, value=dict_data[column_name])
         else:
             return None
         sql = f"""INSERT INTO {self.Db_NAME}.{table_name} ({','.join(values.keys())}) VALUES ({','.join(values.values())})"""
@@ -259,7 +289,7 @@ class BaseConnection(object):
 
     def __get_column(self, name, columns):
         for c in columns:
-            column_name = c.get("COLUMN_NAME", None) if c.get("COLUMN_NAME", None) is None else c["column_name"]
+            column_name = c.get("COLUMN_NAME", None) if c.get("COLUMN_NAME", None) is not None else c["column_name"]
             if column_name == name:
                 return c
         return None
@@ -273,7 +303,7 @@ class BaseConnection(object):
             self.table_column_cache[table_name] = columns
             return columns
 
-    def gen_update_dict_sql(self, dict_data: dict, table_name: str, where: str):
+    def gen_update_dict_sql(self, dict_data: dict, table_name: str, where: str, not_update_colunms=[]):
         """
         根据字典生成Update语句
         :param dict_data:  列新字典
@@ -287,31 +317,34 @@ class BaseConnection(object):
             for column_name in dict_data.keys():
                 column = self.__get_column(column_name, columns)
                 if column is not None:
-                    data_type = column.get("DATA_TYPE", None) if column.get("DATA_TYPE", None) is None else column[
+                    data_type = column.get("DATA_TYPE", None) if column.get("DATA_TYPE", None) is not None else column[
                         "data_type"]
-                    self.__get_column_values(column_name, data_type, dict_data, values)
+                    values[column_name] = self.__get_column_value(data_type=data_type, value=dict_data[column_name])
         else:
             return None
         sets = []
         for c in values.keys():
-            sets.append(f"{c}={values[c]}")
+            if c not in not_update_colunms:
+                sets.append(f"{c}={values[c]}")
         update_sql = f"UPDATE {self.Db_NAME}.{table_name} SET {','.join(sets)} " + where
         return update_sql
 
-    def __get_column_values(self, column_name, data_type, dict_data, values):
-        v = dict_data.get(column_name, None)
+    def __get_column_value(self, data_type, value):
+        """获取列的值"""
+        if data_type is None:
+            return f"'{self.convert_str(value)}'"
         t = self.__get_py_type(db_type=data_type)
-        if v is None:
-            values[column_name] = "null"
+        if value is None:
+            return "null"
         elif t == str:
-            values[column_name] = f"'{self.convert_str(v)}'"
+            return f"'{self.convert_str(value)}'"
         elif t in (int, float):
-            values[column_name] = str(v)
+            return str(value)
         else:
-            if isinstance(v, datetime.datetime) or isinstance(v, datetime.date):
-                values[column_name] = t.replace("${VALUE}", date_to_str(v))
+            if isinstance(value, (datetime.datetime, datetime.date)):
+                return t.replace("${VALUE}", date_to_str(value))
             else:
-                values[column_name] = t.replace("${VALUE}", self.convert_str(v))
+                return t.replace("${VALUE}", self.convert_str(value))
 
     def select_insert_sql(self, sql: str, table_name: str) -> list:
         """根据SQL查询数据并生成Insert语句"""
@@ -350,4 +383,118 @@ class BaseConnection(object):
                   CSV_SPLIT=data_split_chars,
                   CSV_FIELD_CLOSE=data_close_chars,
                   encoding=encoding,
-                  callback=outingCallback)
+                  callback=outingCallback,
+                  log=self.log)
+
+    def insert_entity(self, entity, commit=True):
+        """传入实体保存到数据库"""
+        sql, values = insert_sql(entity=entity)
+        self.log.debug(sql)
+        self.log.debug(f"params:{values}")
+        sql = self.sql_params(sql, values)
+        i = self.execute(sql, values)
+        primary_key = self.cursor.lastrowid
+        setattr(entity, get_entity_primary_key(entity), primary_key)
+        if i != 1:
+            raise FetchRowsException(f"影响条数为{i}")
+        if commit:
+            self.commit()
+        return entity
+
+    def update_entity(self, entity, pass_null=False, commit=True, check_exist=False) -> None:
+        if check_exist:
+            es = self.select_entity_list(entity=entity)
+            if len(es) != 1:
+                raise ExistException(f"找不到要更新的实体")
+        sql, values = update_sql(entity=entity, pass_null=pass_null)
+        self.log.debug(f"SQL:{sql}")
+        self.log.debug(f"params:{values}")
+        sql = self.sql_params(sql, values)
+        i = self.execute(sql, values)
+        if commit:
+            self.commit()
+
+    def delete_entity(self, entity, commit=True) -> int:
+        sql, values = delete_sql(entity=entity)
+        self.log.debug(sql)
+        self.log.debug(f"params:{values}")
+        sql = self.sql_params(sql, values)
+        i = self.execute(sql, values)
+        if commit:
+            self.commit()
+        return i
+
+    def select_entity_list(self, cls=None, sql=None, params=None, like_entity=None, entity=None, rel="AND",
+                           page: PageInput = None):
+        if sql is None:
+            if like_entity is not None:
+                if cls is None:
+                    cls = like_entity.__class__
+                table_name = getattr(like_entity, "__table_name__")
+            elif entity is not None:
+                if cls is None:
+                    cls = entity.__class__
+                table_name = getattr(entity, "__table_name__")
+            else:
+                table_name = getattr(cls, "__table_name__")
+
+            sql = "SELECT * FROM " + table_name
+        if params is None:
+            if like_entity is not None:
+                where, values = where_like_entity(entity=like_entity, rel=rel)
+                sql += where
+                params = values
+            elif entity is not None:
+                where, values = where_entity(entity=entity, rel=rel)
+                sql += where
+                params = values
+        if sql is None:
+            raise Exception("查询SQL不能为空")
+        if page is not None:
+            pages, rowsNumber = self.select_page_size(sql=sql, params=params,
+                                                      page_size=page.page_size)
+            order_by = order_by_pagination(entity=cls, pagination=page)
+            dict_list = self.select_dict_page_list(sql=f"{sql} {order_by}", params=params,
+                                                   page_size=page.page_size,
+                                                   page_start=page.page_start)
+            values = entity_list(dict_list=dict_list, cls=cls)
+            pageOut = PageOutput()
+            pageOut.rows = values
+            pageOut.page_start = page.page_start
+            pageOut.page_size = page.page_size
+            pageOut.page_number = pages
+            pageOut.rows_number = rowsNumber
+            pageOut.sort_by = page.sort_by
+            pageOut.descending = page.descending
+            return pageOut
+        else:
+            dict_list = self.select_dict_list(sql=sql, params=params)
+            values = entity_list(dict_list=dict_list, cls=cls)
+            return values
+
+    def select_entity_first(self, cls=None, sql=None, params=None, like_entity=None, entity=None):
+        ll = self.select_entity_list(cls, sql=sql, params=params)
+        if ll is not None and len(ll) > 0:
+            return ll[0]
+
+    def select_entity_by_pk(self, pk_value, cls):
+        primary_key = get_entity_primary_key(cls)
+        table_name = getattr(cls, "__table_name__")
+        _SQL = ""
+        if isinstance(primary_key, list):
+            for pk in primary_key:
+                _SQL += f"""{pk}=:{pk} AND"""
+            _SQL = _SQL[:-3]
+        else:
+            _SQL = f"""{primary_key}=:{primary_key}"""
+        sql = f"""SELECT * FROM {table_name} WHERE {_SQL}"""
+
+        params = {}
+        if isinstance(pk_value, str):
+            params[primary_key] = pk_value
+        else:
+            params = pk_value
+
+        ll = self.select_entity_list(cls, sql=sql, params=params)
+        if ll is not None and len(ll) > 0:
+            return ll[0]

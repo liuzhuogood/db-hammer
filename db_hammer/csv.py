@@ -15,21 +15,23 @@ def get_headers(cursor):
     return cc
 
 
-def count_rows(cursor, sql):
+def count_rows(cursor, sql, log=None):
+    log = log or logging.getLogger(__name__)
     count_sql = f"SELECT COUNT(0) FROM ({sql}) tmp_count"
-    logging.debug("execute sql ==>:" + count_sql.replace("\n", " "))
+    log.debug("execute sql:" + count_sql.replace("\n", " "))
     cursor.execute(count_sql)
     data = cursor.fetchone()
-    logging.debug("fetch rows  <==:" + str(len(data)))
+    log.debug("fetch rows:" + str(len(data)))
     num = data[0]
     return int(num)
 
 
 def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPLIT, CSV_FIELD_CLOSE, encoding,
-          callback):
+          callback, log=None):
+    log = log or logging.getLogger(__name__)
     try:
         os.makedirs(path, exist_ok=True)
-        logging.info(f"export path：%s" % path)
+        log.info(f"export path：%s" % path)
         cursor.execute(sql)
         col_names = get_headers(cursor)
         csv_data = cursor.fetchmany(int(bachSize))
@@ -40,10 +42,10 @@ def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPL
         c_count = 0
         total = 0
         if callback is not None:
-            total = count_rows(cursor, sql)
+            total = count_rows(cursor, sql, log)
             callback(c_count, total)
         while len(csv_data) > 0:
-            logging.debug("export row::" + str(c_count))
+            log.debug("export row::" + str(c_count))
             CACHE_ROWS += len(csv_data)
             if CACHE_ROWS < CACHE_COUNT and c_count > 0:
                 file_i, file_name, write_f = write_file(col_names, csv_data, path, file_i, False, write_f, file_mode,
@@ -59,9 +61,9 @@ def start(cursor, sql, bachSize, PACK_SIZE, path, file_mode, add_header, CSV_SPL
         if write_f is not None:
             write_f.flush()
             write_f.close()
-        logging.info(f"export end, total row::%d" % c_count)
+        log.info(f"export end, total row::%d" % c_count)
     except Exception as e:
-        logging.exception(e)
+        log.exception(e)
     finally:
         pass
 
