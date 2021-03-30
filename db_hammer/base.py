@@ -44,12 +44,12 @@ class BaseConnection(object):
 
         count_sql = "select COUNT(0) from ( %s ) temp_count" % sql
         count_sql = self.sql_params(count_sql, params)
-        self.log.debug("Execute SQL :" + count_sql.replace("\n", " "))
-        self.log.debug("Execute Params :" + str(params))
+        self.log.debug("执行SQL:" + count_sql.replace("\n", " "))
+        self.log.debug("参数:" + str(params))
         self.cursor.execute(count_sql, params)
         data = self.cursor.fetchone()
         count_rows = data[0]
-        self.log.debug("fetch rows:" + str(len(data)))
+        self.log.debug("影响行数:" + str(len(data)))
         num = count_rows // page_size
         if count_rows > page_size * num:
             num = num + 1
@@ -92,12 +92,12 @@ class BaseConnection(object):
         start = page_size * (page_start - 1)
         end = page_size * (page_end - page_start)
         page_sql = """SELECT * FROM ( %s ) temp_page LIMIT %d,%d """ % (sql, start, end)
+        self.log.debug("执行SQL:" + page_sql.replace("\n", " "))
         page_sql = self.sql_params(page_sql, params)
-        self.log.debug("Execute SQL :" + page_sql.replace("\n", " "))
-        self.log.debug("Execute Params :" + str(params))
+        self.log.debug("参数:" + str(params))
         self.cursor.execute(page_sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("fetch rows:" + str(len(data)))
+        self.log.debug("影响行数:" + str(len(data)))
         if add_headers:
             col_names = self.cursor.description
             list(data).insert(col_names, 0)
@@ -128,7 +128,7 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
+        self.log.debug("执行SQL:" + sql.replace("\n", " "))
         _sql = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchone()
@@ -142,12 +142,12 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
-        self.log.debug("Execute Params :" + str(params))
+        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        self.log.debug("参数:" + str(params))
         _sql = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("fetch rows:" + str(len(data)))
+        self.log.debug("影响行数:" + str(len(data)))
         return data
 
     def select_dict_list(self, sql: str, params=None) -> list:
@@ -157,12 +157,12 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("Execute SQL :" + sql.replace("\n", " "))
-        self.log.debug("Execute Params :" + str(params))
+        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        self.log.debug("参数:" + str(params))
         _sql = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("fetch rows:" + str(len(data)))
+        self.log.debug("影响行数:" + str(len(data)))
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
@@ -195,29 +195,30 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        # self.log.debug("Execute SQL :" + sql.replace("\n", " "))
         _sql = self.sql_params(sql, params)
+        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        self.log.debug("参数:" + str(params))
         self.cursor.execute(_sql, params)
         i = self.cursor.rowcount
-        self.log.debug("fetch rows:" + str(i))
+        self.log.debug("影响行数:" + str(i))
         return i
 
     def close(self):
         self.conn.close()
-        self.log.debug("conn close")
+        # self.log.debug("关闭连接")
 
     def rollback(self):
         """回滚事务"""
-        self.log.debug("rollback start")
+        # self.log.debug("回滚事务开始")
         self.conn.rollback()
-        self.log.debug("rollback end")
+        self.log.debug("回滚事务完成")
 
     def commit(self):
         """提交事务，如果有对数据库进更新，需要手动提交事务
         """
-        self.log.debug("commit start")
+        # self.log.debug("提交事务开始")
         self.conn.commit()
-        self.log.debug("commit end")
+        self.log.debug("提交事务完成")
         return
 
     def db_data_type_mapping(self):
@@ -389,12 +390,11 @@ class BaseConnection(object):
     def insert_entity(self, entity, commit=True):
         """传入实体保存到数据库"""
         sql, values = insert_sql(entity=entity)
-        self.log.debug(sql)
-        self.log.debug(f"params:{values}")
         sql = self.sql_params(sql, values)
         i = self.execute(sql, values)
         primary_key = self.cursor.lastrowid
-        setattr(entity, get_entity_primary_key(entity), primary_key)
+        if primary_key != 0:
+            setattr(entity, get_entity_primary_key(entity)[0], primary_key)
         if i != 1:
             raise FetchRowsException(f"影响条数为{i}")
         if commit:
@@ -403,8 +403,8 @@ class BaseConnection(object):
 
     def update_entity(self, entity, pass_null=False, commit=True, check_exist=False) -> None:
         if check_exist:
-            es = self.select_entity_list(entity=entity)
-            if len(es) != 1:
+            es = self.select_entity_by_pk(entity=entity)
+            if es is None:
                 raise ExistException(f"找不到要更新的实体")
         sql, values = update_sql(entity=entity, pass_null=pass_null)
         self.log.debug(f"SQL:{sql}")
@@ -473,13 +473,13 @@ class BaseConnection(object):
             return values
 
     def select_entity_first(self, cls=None, sql=None, params=None, like_entity=None, entity=None):
-        ll = self.select_entity_list(cls, sql=sql, params=params)
+        ll = self.select_entity_list(cls, sql=sql, params=params, like_entity=like_entity, entity=entity)
         if ll is not None and len(ll) > 0:
             return ll[0]
 
-    def select_entity_by_pk(self, pk_value, cls):
-        primary_key = get_entity_primary_key(cls)
-        table_name = getattr(cls, "__table_name__")
+    def select_entity_by_pk(self, entity, pk_value=None):
+        primary_key, _pk_value = get_entity_primary_key(entity)
+        table_name = getattr(entity, "__table_name__")
         _SQL = ""
         if isinstance(primary_key, list):
             for pk in primary_key:
@@ -488,6 +488,8 @@ class BaseConnection(object):
         else:
             _SQL = f"""{primary_key}=:{primary_key}"""
         sql = f"""SELECT * FROM {table_name} WHERE {_SQL}"""
+        if pk_value is None:
+            pk_value = _pk_value
 
         params = {}
         if isinstance(pk_value, str):
@@ -495,6 +497,6 @@ class BaseConnection(object):
         else:
             params = pk_value
 
-        ll = self.select_entity_list(cls, sql=sql, params=params)
+        ll = self.select_entity_list(entity, sql=sql, params=params)
         if ll is not None and len(ll) > 0:
             return ll[0]

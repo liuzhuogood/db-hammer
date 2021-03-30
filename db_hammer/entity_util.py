@@ -1,5 +1,7 @@
 import datetime
 
+from pydantic.main import ModelMetaclass
+
 from db_hammer.page import PageInput
 from db_hammer.util.date import date_to_str
 
@@ -111,7 +113,10 @@ def entity_list(dict_list, cls) -> list:
         en = {}
         for c in cols:
             en[c] = record[str(c).upper()]
-        entity = cls(**en)
+        if type(cls.__class__) != ModelMetaclass:
+            entity = cls(**en)
+        else:
+            entity = cls.__class__(**en)
         result.append(entity)
     return result
 
@@ -164,7 +169,10 @@ def order_by_pagination(entity, pagination: PageInput):
 def get_entity_primary_key(entity):
     primary_key = getattr(entity, "__primary_key__")
     if isinstance(primary_key, list):
-        return None
+        pk_value = {}
+        for pk in primary_key:
+            pk_value[pk] = getattr(entity, pk)
+        return primary_key, pk_value
     else:
-        return primary_key
-
+        pk_value = getattr(entity, primary_key)
+        return primary_key, pk_value

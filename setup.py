@@ -5,7 +5,7 @@ with open("./README.md", "rb") as fh:
 
 setup(
     name='db-hammer',
-    version='0.0.14',
+    version='0.0.15',
     description='database tools；数据库操作',
     author='hammer',
     author_email='liuzhuogood@foxmail.com',
@@ -13,5 +13,5 @@ setup(
     long_description_content_type="text/markdown",
     packages=['db_hammer', 'db_hammer.util'],
     package_data={'db_hammer': ['README.md', 'LICENSE']},
-    install_requires=[]
+    install_requires=["pydantic"]
 )

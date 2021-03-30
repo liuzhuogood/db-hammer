@@ -22,7 +22,8 @@ class MySQLConnection(BaseConnection):
         port = kwargs.get("port", 3306)
         charset = kwargs.get("charset", "utf8")
         super().__init__(**kwargs)
-        self.conn = pymysql.connect(kwargs["host"], kwargs["user"], kwargs["pwd"], kwargs["db_name"], port=port,
+        self.conn = pymysql.connect(host=kwargs["host"], user=kwargs["user"], password=kwargs["pwd"],
+                                    database=kwargs["db_name"], port=port,
                                     charset=charset)
         self.cursor = self.conn.cursor()
 
