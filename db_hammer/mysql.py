@@ -1,3 +1,4 @@
+from db_hammer import DB_TYPE_MYSQL
 from db_hammer.base import BaseConnection
 from db_hammer.csv import start as csv_start
 
@@ -11,6 +12,7 @@ except ImportError:
 
 class MySQLConnection(BaseConnection):
     def __init__(self, **kwargs):
+        self.db_type = DB_TYPE_MYSQL
         if kwargs.get("host", None) is None:
             raise Exception("host")
         if kwargs.get("user", None) is None:
@@ -26,6 +28,7 @@ class MySQLConnection(BaseConnection):
                                     database=kwargs["db_name"], port=port,
                                     charset=charset)
         self.cursor = self.conn.cursor()
+
 
     def convert_str(self, s: str):
         return s.replace("'", "\\'")

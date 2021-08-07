@@ -1,6 +1,7 @@
 import os
 import sys
 
+from db_hammer import DB_TYPE_ORACLE
 from db_hammer.base import BaseConnection
 
 try:
@@ -14,6 +15,7 @@ except ImportError:
 class OracleConnection(BaseConnection):
 
     def __init__(self, **kwargs):
+        self.db_type = DB_TYPE_ORACLE
         if kwargs.get("host", None) is None:
             raise Exception("host")
         if kwargs.get("user", None) is None:

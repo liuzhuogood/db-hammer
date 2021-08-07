@@ -1,24 +1,29 @@
 import datetime
 
-from pydantic.main import ModelMetaclass
-
 from db_hammer.page import PageInput
 from db_hammer.util.date import date_to_str
 
 
-def get_entity_fields(entity):
+def get_entity_fields(entity, none_tag=False):
     """获取对象的所的字段"""
-    dd = entity.__fields__
+    if isinstance(entity, type):
+        entity = entity()
+    dd = dir(entity)
     _dict = {}
     ignore_columns = getattr(entity, "__ignore_columns__", None)
     for d in dd:
+        if d.startswith("_"):
+            continue
+
         if ignore_columns is not None and d in ignore_columns:
             continue
         if hasattr(entity, d):
             v = getattr(entity, d)
-            if not d.startswith("_") \
-                    and isinstance(v, (str, int, float, datetime.datetime, datetime.date)):
-                _dict[d] = v
+            if none_tag and v is None:
+                _dict[d] = None
+            else:
+                if isinstance(v, (str, int, float, datetime.datetime, datetime.date)):
+                    _dict[d] = v
         else:
             _dict[d] = None
     return _dict
@@ -107,18 +112,25 @@ def delete_sql(entity):
 
 
 def entity_list(dict_list, cls) -> list:
-    cols = get_entity_fields(cls)
+    cols = get_entity_fields(cls, none_tag=True)
     result = []
     for record in dict_list:
-        en = {}
-        for c in cols:
-            en[c] = record[str(c).upper()]
-        if type(cls.__class__) != ModelMetaclass:
-            entity = cls(**en)
-        else:
-            entity = cls.__class__(**en)
+        entity = dic_to_entity(cls, record, cols)
         result.append(entity)
     return result
+
+
+def dic_to_entity(cls, record, cols=None):
+    en = {}
+    if cols is None:
+        cols = record.keys()
+    for c in cols:
+        en[c] = record[str(c)]
+    if type(cls.__class__) != type:
+        entity = cls(**en)
+    else:
+        entity = cls.__class__(**en)
+    return entity
 
 
 def where_entity(entity, rel="AND"):

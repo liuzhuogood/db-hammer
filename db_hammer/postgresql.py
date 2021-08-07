@@ -1,5 +1,6 @@
 import uuid
 
+from db_hammer import DB_TYPE_POSTGRESQL
 from db_hammer.base import BaseConnection
 from db_hammer.csv import start as csv_start
 
@@ -14,6 +15,7 @@ except ImportError:
 class PostgreSQLConnection(BaseConnection):
 
     def __init__(self, **kwargs):
+        self.db_type = DB_TYPE_POSTGRESQL
         if kwargs.get("host", None) is None:
             raise Exception("host")
         if kwargs.get("user", None) is None:

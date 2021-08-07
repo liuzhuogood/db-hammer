@@ -3,6 +3,7 @@ import logging
 import re
 from enum import Enum
 
+from db_hammer import DB_TYPE_MYSQL
 from db_hammer.csv import start as csv_start
 from db_hammer.entity_util import update_sql, insert_sql, delete_sql, entity_list, where_entity, where_like_entity, \
     order_by_pagination, get_entity_primary_key
@@ -23,9 +24,12 @@ class BaseConnection(object):
         """
         self.log = kwargs.get("log", logging.getLogger(__name__))
         self.Db_NAME = kwargs.get("db_name")
+        self.caps = kwargs.get("caps", None)  # A:大写 a:小写
         self.conn = None  # type:Connect
         self.cursor = None  # type:cursor
         self.table_column_cache = {}
+        if self.db_type is None:
+            self.db_type = DB_TYPE_MYSQL
 
     def __enter__(self):
         return self
@@ -43,8 +47,8 @@ class BaseConnection(object):
         """
 
         count_sql = "select COUNT(0) from ( %s ) temp_count" % sql
-        count_sql = self.sql_params(count_sql, params)
-        self.log.debug("执行SQL:" + count_sql.replace("\n", " "))
+        count_sql, params = self.sql_params(count_sql, params)
+        self.log.debug("执行SQL:" + count_sql)
         self.log.debug("参数:" + str(params))
         self.cursor.execute(count_sql, params)
         data = self.cursor.fetchone()
@@ -57,17 +61,22 @@ class BaseConnection(object):
 
     def sql_params(self, sql: str, params: dict):
         if params is None:
-            return sql
+            return sql, None
         ps = re.findall('(?<!\w):\w+', sql)
         start = 0
+        new_params = {}
         for p in ps:
             if p[1:] not in params or len(p) == 1:
                 raise SqlException(f"SQL语句中参数[{p}]没有传值")
+            new_params[p[1:]] = params[p[1:]]
             start = sql.find(p, start)
-            param = "%(" + p[1:] + ")s"
+            if self.db_type == DB_TYPE_MYSQL:
+                param = "%(" + p[1:] + ")s"
+            else:
+                param = ":" + p[1:] + ""
             sql = sql[:start] + param + sql[start + len(p):]
             start += len(param)
-        return sql
+        return sql, new_params
 
     def select_page_list(self, sql: str, page_size=50, page_start=1, **kwargs) -> list:
         """
@@ -92,8 +101,8 @@ class BaseConnection(object):
         start = page_size * (page_start - 1)
         end = page_size * (page_end - page_start)
         page_sql = """SELECT * FROM ( %s ) temp_page LIMIT %d,%d """ % (sql, start, end)
-        self.log.debug("执行SQL:" + page_sql.replace("\n", " "))
-        page_sql = self.sql_params(page_sql, params)
+        self.log.debug("执行SQL:" + page_sql)
+        page_sql, params = self.sql_params(page_sql, params)
         self.log.debug("参数:" + str(params))
         self.cursor.execute(page_sql, params)
         data = self.cursor.fetchall()
@@ -128,8 +137,8 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql.replace("\n", " "))
-        _sql = self.sql_params(sql, params)
+        self.log.debug("执行SQL:" + sql)
+        _sql, params = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchone()
         if data is None:
@@ -142,9 +151,9 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        self.log.debug("执行SQL:" + sql)
         self.log.debug("参数:" + str(params))
-        _sql = self.sql_params(sql, params)
+        _sql, params = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
         self.log.debug("影响行数:" + str(len(data)))
@@ -157,9 +166,9 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        self.log.debug("执行SQL:" + sql)
         self.log.debug("参数:" + str(params))
-        _sql = self.sql_params(sql, params)
+        _sql, params = self.sql_params(sql, params)
         self.cursor.execute(_sql, params)
         data = self.cursor.fetchall()
         self.log.debug("影响行数:" + str(len(data)))
@@ -178,13 +187,18 @@ class BaseConnection(object):
             return None
         return data[0]
 
-    @staticmethod
-    def _data_to_map(col_names, data):
+    def _data_to_map(self, col_names, data):
         r_list = []
         for k in range(len(data)):
             row = {}
             for i in range(len(col_names)):
-                row[col_names[i][0]] = data[k][i]
+                name = col_names[i][0]
+                if self.caps is not None:
+                    if self.caps == "A":
+                        name = name.upper()
+                    else:
+                        name = name.lower()
+                row[name] = data[k][i]
             r_list.append(row)
         return r_list
 
@@ -195,10 +209,13 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        _sql = self.sql_params(sql, params)
-        self.log.debug("执行SQL:" + sql.replace("\n", " "))
+        _sql, params = self.sql_params(sql, params)
+        self.log.debug("执行SQL:" + _sql)
         self.log.debug("参数:" + str(params))
-        self.cursor.execute(_sql, params)
+        if params is None:
+            self.cursor.execute(_sql)
+        else:
+            self.cursor.execute(_sql, params)
         i = self.cursor.rowcount
         self.log.debug("影响行数:" + str(i))
         return i
@@ -390,7 +407,7 @@ class BaseConnection(object):
     def insert_entity(self, entity, commit=True):
         """传入实体保存到数据库"""
         sql, values = insert_sql(entity=entity)
-        sql = self.sql_params(sql, values)
+        sql, values = self.sql_params(sql, values)
         i = self.execute(sql, values)
         primary_key = self.cursor.lastrowid
         if primary_key != 0:
@@ -409,7 +426,7 @@ class BaseConnection(object):
         sql, values = update_sql(entity=entity, pass_null=pass_null)
         self.log.debug(f"SQL:{sql}")
         self.log.debug(f"params:{values}")
-        sql = self.sql_params(sql, values)
+        sql, values = self.sql_params(sql, values)
         i = self.execute(sql, values)
         if commit:
             self.commit()
@@ -418,7 +435,7 @@ class BaseConnection(object):
         sql, values = delete_sql(entity=entity)
         self.log.debug(sql)
         self.log.debug(f"params:{values}")
-        sql = self.sql_params(sql, values)
+        sql, values = self.sql_params(sql, values)
         i = self.execute(sql, values)
         if commit:
             self.commit()

@@ -1,10 +1,13 @@
 import sqlite3
+
+from db_hammer import DB_TYPE_SQLITE
 from db_hammer.base import BaseConnection
 
 
 class Sqlite3Connection(BaseConnection):
 
     def __init__(self, **kwargs):
+        self.db_type = DB_TYPE_SQLITE
         super().__init__(**kwargs)
         database = kwargs.get("database", None)
         if database is None:
