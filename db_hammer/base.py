@@ -3,9 +3,8 @@ import logging
 import re
 from enum import Enum
 
-from db_hammer import DB_TYPE_MYSQL
-from db_hammer.csv import start as csv_start
 import db_hammer.entity_util as entity_util
+from db_hammer import DB_TYPE_MYSQL
 from db_hammer.page import PageOutput, PageInput
 from db_hammer.sql_exception import SqlException, FetchRowsException, ExistException
 from db_hammer.util.date import date_to_str
@@ -381,33 +380,6 @@ class BaseConnection(object):
     def convert_str(self, s: str):
         return str(s)
 
-    def export_data_file(self, sql, dir_path, file_mode="txt", pack_size=500000, bachSize=10000, add_header=True,
-                         data_split_chars=',',
-                         data_close_chars='"', encoding="utf-8", outingCallback=None):
-        """导出数据文件
-        @:param sql 导出时的查询SQL
-        @:param dir_path 导出的数据文件存放目录
-        @:param file_mode 导出文件格式：txt|gz|csv
-        @:param add_header 数据文件是否增加表头
-        @:param pack_size  每个数据文件大小，默认为50万行，强烈建议分割数据文件，单文件写入速度会越来越慢
-        @:param bachSize   游标大小
-        @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
-        @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
-        @:param encoding 文件编码格式，默认为utf-8
-        @:param outingCallback 导出过程中的回调方法
-        """
-        csv_start(cursor=self.cursor,
-                  sql=sql,
-                  path=dir_path,
-                  bachSize=bachSize,
-                  PACK_SIZE=pack_size,
-                  file_mode=file_mode,
-                  add_header=add_header,
-                  CSV_SPLIT=data_split_chars,
-                  CSV_FIELD_CLOSE=data_close_chars,
-                  encoding=encoding,
-                  callback=outingCallback,
-                  log=self.log)
 
     def insert_entity(self, entity, commit=True):
         """传入实体保存到数据库"""
@@ -531,3 +503,4 @@ class BaseConnection(object):
         ll = self.select_entity_list(entity, sql=sql, params=params)
         if ll is not None and len(ll) > 0:
             return ll[0]
+

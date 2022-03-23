@@ -1,6 +1,6 @@
 from db_hammer import DB_TYPE_MYSQL
 from db_hammer.base import BaseConnection
-from db_hammer.csv import start as csv_start
+from db_hammer.csv import start as csv_start, get_headers
 
 try:
     import pymysql
@@ -29,37 +29,47 @@ class MySQLConnection(BaseConnection):
                                     charset=charset)
         self.cursor = self.conn.cursor()
 
-
     def convert_str(self, s: str):
         return s.replace("'", "\\'")
 
-    def export_data_file(self, sql, dir_path, file_mode="gz", pack_size=500000, bachSize=10000, add_header=True,
+    def export_data_file(self, sql, dir_path, file_mode="gz", pack_size=500000, fetch_size=10000, add_header=True,
                          data_split_chars=',',
-                         data_close_chars='"', encoding="utf-8", outingCallback=None):
+                         data_close_chars='"', encoding="utf-8", outing_callback=None):
         """导出数据文件
         @:param sql 导出时的查询SQL
         @:param dir_path 导出的数据文件存放目录
         @:param file_mode 导出文件格式：txt|gz|csv
         @:param add_header 数据文件是否增加表头
         @:param pack_size  每个数据文件大小，默认为50万行，强烈建议分割数据文件，单文件写入速度会越来越慢
-        @:param bachSize   游标大小
+        @:param fetch_size   游标大小
         @:param data_split_chars 每条数据字段分隔字符,csv文件默认为英文逗号
         @:param data_close_chars 每条数据字段关闭字符,csv文件默认为英文双引号
         @:param encoding 文件编码格式，默认为utf-8
-        @:param outingCallback 导出过程中的回调方法
+        @:param outing_callback 导出过程中的回调方法
         """
         # 要使用服务器游标，本地游标会内存溢出
         cursor = self.conn.cursor(pymysql.cursors.SSCursor)
         csv_start(cursor=cursor,
                   sql=sql,
                   path=dir_path,
-                  bachSize=bachSize,
+                  bachSize=fetch_size,
                   PACK_SIZE=pack_size,
                   file_mode=file_mode,
                   add_header=add_header,
                   CSV_SPLIT=data_split_chars,
                   CSV_FIELD_CLOSE=data_close_chars,
                   encoding=encoding,
-                  callback=outingCallback,
+                  callback=outing_callback,
                   log=self.log)
         cursor.close()
+
+    def cursor_execute(self, sql, callback, params=None, fetch_size=100):
+        cursor = self.conn.cursor(pymysql.cursors.SSCursor)
+        _sql, params = self.sql_params(sql, params)
+        cursor.execute(_sql, params)
+        csv_data = cursor.fetchmany(int(fetch_size))
+        col_names = get_headers(cursor)
+        while len(csv_data) > 0:
+            records: list[{}] = self._data_to_map(col_names, csv_data)
+            callback(records)
+            csv_data = cursor.fetchmany(int(fetch_size))
