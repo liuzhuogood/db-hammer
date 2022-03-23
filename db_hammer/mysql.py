@@ -19,12 +19,12 @@ class MySQLConnection(BaseConnection):
             raise Exception("user")
         if kwargs.get("db_name", None) is None:
             raise Exception("db_name")
-        if kwargs.get("pwd", None) is None:
-            raise Exception("pwd")
+        if kwargs.get("password", None) is None:
+            raise Exception("password")
         port = kwargs.get("port", 3306)
         charset = kwargs.get("charset", "utf8")
         super().__init__(**kwargs)
-        self.conn = pymysql.connect(host=kwargs["host"], user=kwargs["user"], password=kwargs["pwd"],
+        self.conn = pymysql.connect(host=kwargs["host"], user=kwargs["user"], password=kwargs["password"],
                                     database=kwargs["db_name"], port=port,
                                     charset=charset)
         self.cursor = self.conn.cursor()

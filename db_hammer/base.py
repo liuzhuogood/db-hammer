@@ -5,8 +5,7 @@ from enum import Enum
 
 from db_hammer import DB_TYPE_MYSQL
 from db_hammer.csv import start as csv_start
-from db_hammer.entity_util import update_sql, insert_sql, delete_sql, entity_list, where_entity, where_like_entity, \
-    order_by_pagination, get_entity_primary_key
+import db_hammer.entity_util as entity_util
 from db_hammer.page import PageOutput, PageInput
 from db_hammer.sql_exception import SqlException, FetchRowsException, ExistException
 from db_hammer.util.date import date_to_str
@@ -22,14 +21,20 @@ class BaseConnection(object):
         """
         :param kwargs:
         """
+        self.db_type = kwargs.get("db_type", None)
+        self.debug = kwargs.get("debug", False)
         self.log = kwargs.get("log", logging.getLogger(__name__))
         self.Db_NAME = kwargs.get("db_name")
         self.caps = kwargs.get("caps", None)  # A:大写 a:小写
-        self.conn = None  # type:Connect
-        self.cursor = None  # type:cursor
+        self.conn = None
+        self.cursor = None
         self.table_column_cache = {}
         if self.db_type is None:
             self.db_type = DB_TYPE_MYSQL
+        if self.debug:
+            logging.basicConfig(level=logging.DEBUG,
+                                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                                datefmt='%Y-%m-%d %H:%M:%S')
 
     def __enter__(self):
         return self
@@ -62,7 +67,7 @@ class BaseConnection(object):
     def sql_params(self, sql: str, params: dict):
         if params is None:
             return sql, None
-        ps = re.findall('(?<!\w):\w+', sql)
+        ps = re.findall(r'(?<!\w):\w+', sql)
         start = 0
         new_params = {}
         for p in ps:
@@ -406,12 +411,12 @@ class BaseConnection(object):
 
     def insert_entity(self, entity, commit=True):
         """传入实体保存到数据库"""
-        sql, values = insert_sql(entity=entity)
-        sql, values = self.sql_params(sql, values)
+        entity_util.init_entity(entity=entity)
+        sql, values = entity_util.insert_sql(entity=entity)
         i = self.execute(sql, values)
         primary_key = self.cursor.lastrowid
         if primary_key != 0:
-            setattr(entity, get_entity_primary_key(entity)[0], primary_key)
+            setattr(entity, entity_util.get_entity_primary_key(entity)[0], primary_key)
         if i != 1:
             raise FetchRowsException(f"影响条数为{i}")
         if commit:
@@ -419,11 +424,12 @@ class BaseConnection(object):
         return entity
 
     def update_entity(self, entity, pass_null=False, commit=True, check_exist=False) -> None:
+        entity_util.init_entity(entity=entity)
         if check_exist:
             es = self.select_entity_by_pk(entity=entity)
             if es is None:
                 raise ExistException(f"找不到要更新的实体")
-        sql, values = update_sql(entity=entity, pass_null=pass_null)
+        sql, values = entity_util.update_sql(entity=entity, pass_null=pass_null)
         self.log.debug(f"SQL:{sql}")
         self.log.debug(f"params:{values}")
         sql, values = self.sql_params(sql, values)
@@ -432,7 +438,8 @@ class BaseConnection(object):
             self.commit()
 
     def delete_entity(self, entity, commit=True) -> int:
-        sql, values = delete_sql(entity=entity)
+        entity_util.init_entity(entity=entity)
+        sql, values = entity_util.delete_sql(entity=entity)
         self.log.debug(sql)
         self.log.debug(f"params:{values}")
         sql, values = self.sql_params(sql, values)
@@ -441,28 +448,33 @@ class BaseConnection(object):
             self.commit()
         return i
 
-    def select_entity_list(self, cls=None, sql=None, params=None, like_entity=None, entity=None, rel="AND",
+    def select_entity_list(self, entity_class=None, sql=None, params=None, where_entity=None, return_entity=None,
+                           where_rel="AND",
                            page: PageInput = None):
+        if where_entity:
+            entity_util.init_entity(entity=where_entity)
+        elif return_entity:
+            entity_util.init_entity(entity=return_entity)
         if sql is None:
-            if like_entity is not None:
-                if cls is None:
-                    cls = like_entity.__class__
-                table_name = getattr(like_entity, "__table_name__")
-            elif entity is not None:
-                if cls is None:
-                    cls = entity.__class__
-                table_name = getattr(entity, "__table_name__")
+            if where_entity is not None:
+                if entity_class is None:
+                    entity_class = where_entity.__class__
+                table_name = getattr(where_entity, "__table_name__")
+            elif return_entity is not None:
+                if entity_class is None:
+                    entity_class = return_entity.__class__
+                table_name = getattr(return_entity, "__table_name__")
             else:
-                table_name = getattr(cls, "__table_name__")
+                table_name = getattr(entity_class, "__table_name__")
 
             sql = "SELECT * FROM " + table_name
         if params is None:
-            if like_entity is not None:
-                where, values = where_like_entity(entity=like_entity, rel=rel)
+            if where_entity is not None:
+                where, values = entity_util.where_like_entity(entity=where_entity, rel=where_rel)
                 sql += where
                 params = values
-            elif entity is not None:
-                where, values = where_entity(entity=entity, rel=rel)
+            elif return_entity is not None:
+                where, values = where_entity(entity=return_entity, rel=where_rel)
                 sql += where
                 params = values
         if sql is None:
@@ -470,11 +482,11 @@ class BaseConnection(object):
         if page is not None:
             pages, rowsNumber = self.select_page_size(sql=sql, params=params,
                                                       page_size=page.page_size)
-            order_by = order_by_pagination(entity=cls, pagination=page)
+            order_by = entity_util.order_by_pagination(entity=entity_class, pagination=page)
             dict_list = self.select_dict_page_list(sql=f"{sql} {order_by}", params=params,
                                                    page_size=page.page_size,
                                                    page_start=page.page_start)
-            values = entity_list(dict_list=dict_list, cls=cls)
+            values = entity_util.entity_list(dict_list=dict_list, entity_class=entity_class)
             pageOut = PageOutput()
             pageOut.rows = values
             pageOut.page_start = page.page_start
@@ -486,16 +498,18 @@ class BaseConnection(object):
             return pageOut
         else:
             dict_list = self.select_dict_list(sql=sql, params=params)
-            values = entity_list(dict_list=dict_list, cls=cls)
+            values = entity_util.entity_list(dict_list=dict_list, entity_class=entity_class)
             return values
 
-    def select_entity_first(self, cls=None, sql=None, params=None, like_entity=None, entity=None):
-        ll = self.select_entity_list(cls, sql=sql, params=params, like_entity=like_entity, entity=entity)
+    def select_entity_first(self, entity_class=None, sql=None, params=None, like_entity=None, return_entity=None):
+        ll = self.select_entity_list(entity_class, sql=sql, params=params, where_entity=like_entity,
+                                     return_entity=return_entity)
         if ll is not None and len(ll) > 0:
             return ll[0]
 
     def select_entity_by_pk(self, entity, pk_value=None):
-        primary_key, _pk_value = get_entity_primary_key(entity)
+        entity_util.init_entity(entity=entity)
+        primary_key, _pk_value = entity_util.get_entity_primary_key(entity)
         table_name = getattr(entity, "__table_name__")
         _SQL = ""
         if isinstance(primary_key, list):

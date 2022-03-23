@@ -1,5 +1,4 @@
 import datetime
-
 from db_hammer.page import PageInput
 from db_hammer.sql_exception import EntityException
 from db_hammer.util.date import date_to_str
@@ -21,12 +20,13 @@ def init_entity(entity):
         elif hasattr(entity, "uuid"):
             setattr(entity, "__primary_key__", "uuid")
         else:
-            raise EntityException(f"{entity.__name__} No defind __primary_key__")
+            raise EntityException(f"{entity.__class__.__name__} No defind __primary_key__")
 
     if not hasattr(entity, "__table_name__"):
-        setattr(entity, "__table_name__", entity.__name__)
-
-
+        setattr(entity, "__table_name__", f"`{entity.__class__.__name__}`")
+    else:
+        if getattr(entity, "__table_name__")[0] != '`':
+            setattr(entity, "__table_name__", f"`{getattr(entity, '__table_name__')}`")
 
 
 def get_entity_fields(entity, none_tag=False):
@@ -78,11 +78,13 @@ def insert_sql(entity) -> (str, []):
     values_tag = []
     values = {}
     table_name = getattr(entity, "__table_name__")
+    fields = []
     for d in dd:
         value = getattr(entity, d)
         values_tag.append(f":{d}")  # 占位符
+        fields.append(f"`{d}`")
         values[d] = value
-    return f"""INSERT INTO {table_name}({",".join(dd)}) VALUES ({",".join(values_tag)})""", values
+    return f"""INSERT INTO {table_name}({",".join(fields)}) VALUES ({",".join(values_tag)})""", values
 
 
 def update_sql(entity, pass_null=False):
@@ -139,25 +141,31 @@ def delete_sql(entity):
     return f"""DELETE FROM {table_name} WHERE {where}""", values
 
 
-def entity_list(dict_list, cls) -> list:
-    cols = get_entity_fields(cls, none_tag=True)
+def entity_list(dict_list, entity_class) -> list:
+    cols = get_entity_fields(entity_class, none_tag=True)
     result = []
     for record in dict_list:
-        entity = dic_to_entity(cls, record, cols)
+        entity = dic_to_entity(entity_class, record, cols)
         result.append(entity)
     return result
 
 
-def dic_to_entity(cls, record, cols=None):
+def dic_to_entity(entity_class, record, cols=None):
     en = {}
     if cols is None:
         cols = record.keys()
     for c in cols:
         en[c] = record[str(c)]
-    if type(cls.__class__) != type:
-        entity = cls(**en)
+    if type(entity_class.__class__) == type:
+        if len(cols) != 0:
+            entity = entity_class(**en)
+        else:
+            # 说明没有定义dataclasses
+            entity = entity_class()
+            for c in record.keys():
+                setattr(entity, c, record[str(c)])
     else:
-        entity = cls.__class__(**en)
+        entity = entity_class.__class__(**en)
     return entity
 
 
