@@ -10,3 +10,8 @@ class ExistException(Exception):
 class FetchRowsException(Exception):
     """影响行数异常"""
     pass
+
+
+class EntityException(Exception):
+    """实体对象错误"""
+    pass

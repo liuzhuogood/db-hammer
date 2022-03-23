@@ -1,11 +1,39 @@
 import datetime
 
 from db_hammer.page import PageInput
+from db_hammer.sql_exception import EntityException
 from db_hammer.util.date import date_to_str
+
+"""
+__table_name__
+__primary_key__
+__column_map__ : dict
+__ignore_columns__ : [] or ()
+"""
+
+
+def init_entity(entity):
+    if not hasattr(entity, "__primary_key__"):
+        if hasattr(entity, "id"):
+            setattr(entity, "__primary_key__", "id")
+        elif hasattr(entity, "guid"):
+            setattr(entity, "__primary_key__", "guid")
+        elif hasattr(entity, "uuid"):
+            setattr(entity, "__primary_key__", "uuid")
+        else:
+            raise EntityException(f"{entity.__name__} No defind __primary_key__")
+
+    if not hasattr(entity, "__table_name__"):
+        setattr(entity, "__table_name__", entity.__name__)
+
+
 
 
 def get_entity_fields(entity, none_tag=False):
-    """获取对象的所的字段"""
+    """
+    获取对象的所的字段
+    none_tag : 没有值标签
+    """
     if isinstance(entity, type):
         entity = entity()
     dd = dir(entity)
