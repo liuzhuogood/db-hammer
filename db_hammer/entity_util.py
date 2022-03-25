@@ -158,7 +158,12 @@ def dic_to_entity(entity_class, record, cols=None):
         en[c] = record[str(c)]
     if type(entity_class.__class__) == type:
         if len(cols) != 0:
-            entity = entity_class(**en)
+            if callable(entity_class):
+                entity = entity_class(**en)
+            else:
+                entity = entity_class.__class__()
+                for c in record.keys():
+                    setattr(entity, c, record[str(c)])
         else:
             # 说明没有定义dataclasses
             entity = entity_class()
@@ -222,5 +227,7 @@ def get_entity_primary_key(entity):
             pk_value[pk] = getattr(entity, pk)
         return primary_key, pk_value
     else:
-        pk_value = getattr(entity, primary_key)
+        pk_value = None
+        if hasattr(entity, primary_key):
+            pk_value = getattr(entity, primary_key)
         return primary_key, pk_value

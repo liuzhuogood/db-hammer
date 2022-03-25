@@ -63,6 +63,21 @@ class MySQLConnection(BaseConnection):
                   log=self.log)
         cursor.close()
 
+    def _header_to_map(self, col_names, data):
+        r_list = []
+        for k in range(len(data)):
+            row = {}
+            for i in range(len(col_names)):
+                name = col_names[i]
+                if self.caps is not None:
+                    if self.caps == "A":
+                        name = name.upper()
+                    else:
+                        name = name.lower()
+                row[name] = data[k][i]
+            r_list.append(row)
+        return r_list
+
     def cursor_execute(self, sql, callback, params=None, fetch_size=100):
         cursor = self.conn.cursor(pymysql.cursors.SSCursor)
         _sql, params = self.sql_params(sql, params)
@@ -70,6 +85,6 @@ class MySQLConnection(BaseConnection):
         csv_data = cursor.fetchmany(int(fetch_size))
         col_names = get_headers(cursor)
         while len(csv_data) > 0:
-            records: list[{}] = self._data_to_map(col_names, csv_data)
+            records: list[{}] = self._header_to_map(col_names, csv_data)
             callback(records)
             csv_data = cursor.fetchmany(int(fetch_size))

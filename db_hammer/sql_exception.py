@@ -2,7 +2,7 @@ class SqlException(Exception):
     pass
 
 
-class ExistException(Exception):
+class NoExistException(Exception):
     """对象不存在"""
     pass
 

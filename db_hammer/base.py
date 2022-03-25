@@ -6,7 +6,7 @@ from enum import Enum
 import db_hammer.entity_util as entity_util
 from db_hammer import DB_TYPE_MYSQL
 from db_hammer.page import PageOutput, PageInput
-from db_hammer.sql_exception import SqlException, FetchRowsException, ExistException
+from db_hammer.sql_exception import SqlException, FetchRowsException, NoExistException
 from db_hammer.util.date import date_to_str
 
 
@@ -32,7 +32,7 @@ class BaseConnection(object):
             self.db_type = DB_TYPE_MYSQL
         if self.debug:
             logging.basicConfig(level=logging.DEBUG,
-                                format='%(asctime)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
+                                format='%(asctime)s %(filename)s:%(lineno)d %(levelname)s | %(message)s',
                                 datefmt='%Y-%m-%d %H:%M:%S')
 
     def __enter__(self):
@@ -380,6 +380,13 @@ class BaseConnection(object):
     def convert_str(self, s: str):
         return str(s)
 
+    def save_entity(self, entity, commit=True, pass_null=False):
+        """根据主键判断是否存在，决定插入或更新"""
+        entity_util.init_entity(entity=entity)
+        try:
+            self.update_entity(entity=entity, commit=commit, check_exist=True, pass_null=pass_null)
+        except NoExistException:
+            self.insert_entity(entity=entity, commit=commit)
 
     def insert_entity(self, entity, commit=True):
         """传入实体保存到数据库"""
@@ -395,26 +402,25 @@ class BaseConnection(object):
             self.commit()
         return entity
 
-    def update_entity(self, entity, pass_null=False, commit=True, check_exist=False) -> None:
+    def update_entity(self, entity, pass_null=False, commit=True, check_exist=False) -> int:
         entity_util.init_entity(entity=entity)
         if check_exist:
             es = self.select_entity_by_pk(entity=entity)
             if es is None:
-                raise ExistException(f"找不到要更新的实体")
+                raise NoExistException(f"找不到要更新的实体")
         sql, values = entity_util.update_sql(entity=entity, pass_null=pass_null)
         self.log.debug(f"SQL:{sql}")
         self.log.debug(f"params:{values}")
-        sql, values = self.sql_params(sql, values)
         i = self.execute(sql, values)
         if commit:
             self.commit()
+        return i
 
     def delete_entity(self, entity, commit=True) -> int:
         entity_util.init_entity(entity=entity)
         sql, values = entity_util.delete_sql(entity=entity)
         self.log.debug(sql)
         self.log.debug(f"params:{values}")
-        sql, values = self.sql_params(sql, values)
         i = self.execute(sql, values)
         if commit:
             self.commit()
@@ -495,7 +501,7 @@ class BaseConnection(object):
             pk_value = _pk_value
 
         params = {}
-        if isinstance(pk_value, str):
+        if isinstance(pk_value, (str, int)):
             params[primary_key] = pk_value
         else:
             params = pk_value
@@ -503,4 +509,3 @@ class BaseConnection(object):
         ll = self.select_entity_list(entity, sql=sql, params=params)
         if ll is not None and len(ll) > 0:
             return ll[0]
-
