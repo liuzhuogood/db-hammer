@@ -12,7 +12,7 @@ pip3 install db-hammer
 ``` python
 >>> from db_hammer.mysql import MySQLConnection
 
->>> db_conf = {"host": "10.0.0.10","user": "dbuser","pwd": "dbpassword","db_name": "db_name"}
+>>> db_conf = {"host": "10.0.0.10","user": "dbuser","pwd": "dbpassword","database": "database"}
 >>> db = MySQLConnection(**db_conf):
 >>> r = db.select_dict_list("select * from t_student")
 >>> r
@@ -23,7 +23,7 @@ pip3 install db-hammer
 ``` python
 from db_hammer.mysql import MySQLConnection
 
-db_conf = {"host": "10.0.0.10","user": "dbuser","password": "dbpassword","db_name": "db_name"}
+db_conf = {"host": "10.0.0.10","user": "dbuser","password": "dbpassword","database": "database"}
 
 with MySQLConnection(**db_conf) as db:
     i_sql = db.gen_insert_dict_sql(dict_data={

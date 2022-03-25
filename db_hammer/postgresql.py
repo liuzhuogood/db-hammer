@@ -20,14 +20,14 @@ class PostgreSQLConnection(BaseConnection):
             raise Exception("host")
         if kwargs.get("user", None) is None:
             raise Exception("user")
-        if kwargs.get("db_name", None) is None:
-            raise Exception("db_name")
+        if kwargs.get("database", None) is None:
+            raise Exception("database")
         if kwargs.get("pwd", None) is None:
             raise Exception("pwd")
         port = kwargs.get("port", 5432)
 
         super().__init__(**kwargs)
-        self.conn = psycopg2.connect(database=kwargs["db_name"],
+        self.conn = psycopg2.connect(database=kwargs["database"],
                                      user=kwargs["user"],
                                      password=kwargs["pwd"],
                                      host=kwargs["host"],

@@ -20,8 +20,8 @@ class OracleConnection(BaseConnection):
             raise Exception("host")
         if kwargs.get("user", None) is None:
             raise Exception("user")
-        if kwargs.get("db_name", None) is None:
-            raise Exception("db_name")
+        if kwargs.get("database", None) is None:
+            raise Exception("database")
         if kwargs.get("pwd", None) is None:
             raise Exception("pwd")
         port = kwargs.get("port", 1521)
@@ -40,7 +40,7 @@ class OracleConnection(BaseConnection):
         if not CONNECT_TNS:
             try:
                 self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"],
-                                              f'{kwargs["host"]}:{port}/{kwargs["db_name"]}',
+                                              f'{kwargs["host"]}:{port}/{kwargs["database"]}',
                                               encoding="UTF-8", nencoding="UTF-8")
             except Exception as e:
                 if "12514" in str(e):
@@ -50,7 +50,7 @@ class OracleConnection(BaseConnection):
         if CONNECT_TNS:
             try:
                 print("尝试TNS..")
-                dsn = cx_Oracle.makedsn(kwargs["host"], port, service_name=kwargs["db_name"])
+                dsn = cx_Oracle.makedsn(kwargs["host"], port, service_name=kwargs["database"])
                 self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"], dsn=dsn, encoding="UTF-8",
                                               nencoding="UTF-8")
             except Exception as e:

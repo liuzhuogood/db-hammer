@@ -24,8 +24,8 @@ class MsSQLConnection(BaseConnection):
             raise Exception("host")
         if kwargs.get("user", None) is None:
             raise Exception("user")
-        if kwargs.get("db_name", None) is None:
-            raise Exception("db_name")
+        if kwargs.get("database", None) is None:
+            raise Exception("database")
         if kwargs.get("pwd", None) is None:
             raise Exception("pwd")
         port = kwargs.get("port", 1433)
@@ -37,5 +37,5 @@ class MsSQLConnection(BaseConnection):
                                     port=port,
                                     charset=charset,
                                     tds_version=tds_version,
-                                    database=kwargs["db_name"])
+                                    database=kwargs["database"])
         self.cursor = self.conn.cursor()

@@ -6,7 +6,7 @@ db_conf = {
     "host": "127.0.0.1",
     "user": "root",
     "password": "11456",
-    "db_name": "db_hammer",
+    "database": "db_hammer",
     "debug": True
 }
 

@@ -271,7 +271,7 @@ class BaseConnection(object):
         获取数据列的SQL
         占位参数：
             ${TABLE_NAME} : 表名
-            ${DB_NAME} : 连接的数据库名
+            ${database} : 连接的数据库名
 
         :return:
             COLUMN_NAME : 名称
@@ -289,7 +289,7 @@ class BaseConnection(object):
             NUMERIC_PRECISION AS DATA_PRECISION
              FROM INFORMATION_SCHEMA.COLUMNS T
              WHERE 
-             TABLE_NAME = '{table_name}' AND TABLE_SCHEMA = '{self.Db_NAME}'
+             TABLE_NAME = '{table_name}' AND TABLE_SCHEMA = '{self.database}'
             """
 
     def gen_insert_dict_sql(self, dict_data: dict, table_name: str):
@@ -308,7 +308,7 @@ class BaseConnection(object):
                 values[column_name] = self.__get_column_value(data_type=data_type, value=dict_data[column_name])
         else:
             return None
-        sql = f"""INSERT INTO {self.Db_NAME}.{table_name} ({','.join(values.keys())}) VALUES ({','.join(values.values())})"""
+        sql = f"""INSERT INTO {self.database}.{table_name} ({','.join(values.keys())}) VALUES ({','.join(values.values())})"""
         return sql
 
     def __get_column(self, name, columns):
@@ -350,7 +350,7 @@ class BaseConnection(object):
         for c in values.keys():
             if c not in not_update_colunms:
                 sets.append(f"{c}={values[c]}")
-        update_sql = f"UPDATE {self.Db_NAME}.{table_name} SET {','.join(sets)} " + where
+        update_sql = f"UPDATE {self.database}.{table_name} SET {','.join(sets)} " + where
         return update_sql
 
     def __get_column_value(self, data_type, value):
