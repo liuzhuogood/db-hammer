@@ -16,20 +16,22 @@ class DataType(Enum):
 
 
 class BaseConnection(object):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 debug=False,
+                 db_type=DB_TYPE_MYSQL,
+                 log=logging.getLogger(__name__),
+                 caps=None,
+                 **kwargs):
         """
         :param kwargs:
         """
-        self.db_type = kwargs.get("db_type", None)
-        self.debug = kwargs.get("debug", False)
-        self.log = kwargs.get("log", logging.getLogger(__name__))
-        self.Db_NAME = kwargs.get("db_name")
-        self.caps = kwargs.get("caps", None)  # A:大写 a:小写
+        self.db_type = db_type
+        self.debug = debug
+        self.log = log
+        self.caps = caps  # A:大写 a:小写
         self.conn = None
         self.cursor = None
         self.table_column_cache = {}
-        if self.db_type is None:
-            self.db_type = DB_TYPE_MYSQL
         if self.debug:
             logging.basicConfig(level=logging.DEBUG,
                                 format='%(asctime)s %(filename)s:%(lineno)d %(levelname)s | %(message)s',

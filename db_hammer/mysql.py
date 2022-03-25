@@ -1,3 +1,5 @@
+import logging
+
 from db_hammer import DB_TYPE_MYSQL
 from db_hammer.base import BaseConnection
 from db_hammer.csv import start as csv_start, get_headers
@@ -9,24 +11,39 @@ except ImportError:
     print("===> pip3 install pymysql")
     raise Exception("import pymysql error")
 
+"""
+db_conn:
+  # <connection details>
+
+  session_sqls:
+    - SET @@session.max_execution_time=0     # No limit
+    - SET @@session.net_read_timeout=3600    # 1 hour
+    - SET @@session.net_write_timeout=3600   # 1 hour
+
+    # Set other session variables to the default PPW ones
+    - SET @@session.time_zone="+0:00"
+    - SET @@session.wait_timeout=28800
+    - SET @@session.innodb_lock_wait_timeout=3600
+"""
+
 
 class MySQLConnection(BaseConnection):
-    def __init__(self, **kwargs):
+    def __init__(self,
+                 debug=False,
+                 db_type=DB_TYPE_MYSQL,
+                 log=logging.getLogger(__name__),
+                 caps=None,
+                 **kwargs):
         self.db_type = DB_TYPE_MYSQL
         if kwargs.get("host", None) is None:
             raise Exception("host")
         if kwargs.get("user", None) is None:
             raise Exception("user")
-        if kwargs.get("db_name", None) is None:
-            raise Exception("db_name")
         if kwargs.get("password", None) is None:
             raise Exception("password")
-        port = kwargs.get("port", 3306)
-        charset = kwargs.get("charset", "utf8")
-        super().__init__(**kwargs)
-        self.conn = pymysql.connect(host=kwargs["host"], user=kwargs["user"], password=kwargs["password"],
-                                    database=kwargs["db_name"], port=port,
-                                    charset=charset)
+        kwargs["charset"] = kwargs.get("charset", "utf8")
+        super().__init__(debug=debug, db_type=db_type, log=log, caps=caps, **kwargs)
+        self.conn = pymysql.connect(**kwargs)
         self.cursor = self.conn.cursor()
 
     def convert_str(self, s: str):
