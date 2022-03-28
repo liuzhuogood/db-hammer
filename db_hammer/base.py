@@ -450,7 +450,7 @@ class BaseConnection(object):
             sql = "SELECT * FROM " + table_name
         if params is None:
             if where_entity is not None:
-                where, values = entity_util.where_like_entity(entity=where_entity, rel=where_rel)
+                where, values = entity_util.where_where_entity(entity=where_entity, rel=where_rel)
                 sql += where
                 params = values
             elif return_entity is not None:
@@ -481,8 +481,8 @@ class BaseConnection(object):
             values = entity_util.entity_list(dict_list=dict_list, entity_class=entity_class)
             return values
 
-    def select_entity_first(self, entity_class=None, sql=None, params=None, like_entity=None, return_entity=None):
-        ll = self.select_entity_list(entity_class, sql=sql, params=params, where_entity=like_entity,
+    def select_entity_first(self, entity_class=None, sql=None, params=None, where_entity=None, return_entity=None):
+        ll = self.select_entity_list(entity_class, sql=sql, params=params, where_entity=where_entity,
                                      return_entity=return_entity)
         if ll is not None and len(ll) > 0:
             return ll[0]
