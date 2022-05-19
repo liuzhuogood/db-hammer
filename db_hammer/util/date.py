@@ -4,7 +4,7 @@ import datetime
 def date_to_str(date=None, format_str="%Y-%m-%d %H:%M:%S"):
     """时期格式化成字符
         :param date 时间
-        :param format_str %Y-%m-%d %H:%M:%S
+        :param format_str %Y-%m-%d %H:%M:%S.%f
     """
     if date is None:
         date = datetime.datetime.now()

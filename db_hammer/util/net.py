@@ -13,12 +13,13 @@ def is_inuse(ip, port):
         return False
 
 
-def get_random_port(ip):
+def get_random_port(ip, port):
     """根据IP获取一个随机端口（15000~20000）"""
     import random
     times = 0
     max_times = 50
-    port = random.randint(15000, 20000)
+    if port == 0:
+        port = random.randint(15000, 20000)
     while is_inuse(ip, port) and times < max_times:
         port = random.randint(15000, 20000)
         times += 1

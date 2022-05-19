@@ -192,7 +192,7 @@ def where_entity(entity, rel="AND"):
     return where, values
 
 
-def where_where_entity(entity, rel="AND"):
+def where_like_entity(entity, rel="AND"):
     dd = get_entity_fields(entity)
     where = ""
     values = {}

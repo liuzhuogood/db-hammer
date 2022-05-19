@@ -1,5 +1,6 @@
 import os
 import re
+import zipfile
 
 
 def get_dir_files(path: str, mode='F', absolute=False, filter_re=""):
@@ -55,6 +56,16 @@ def get_dir_files(path: str, mode='F', absolute=False, filter_re=""):
                 if re.match(filter_re, root) is not None:
                     aa.append(root)
         return aa
+
+
+def zip_dir(dir_path, out):
+    z = zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED)
+    for path, dirs, filenames in os.walk(dir_path):
+        this_path = os.path.abspath(dir_path)
+        fpath = path.replace(this_path, '')
+        for filename in filenames:
+            z.write(os.path.join(path, filename), os.path.join(fpath, filename))
+    z.close()
 
 
 if __name__ == '__main__':

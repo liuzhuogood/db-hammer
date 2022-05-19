@@ -27,13 +27,21 @@ class Keep:
         if self.f is not None and not self.f.closed:
             return
         else:
-            self.f = gzip.GzipFile(self.file_name, mode="wb+")
+            self.f = gzip.GzipFile(self.file_name, mode="wb")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.save()
+        self.close()
 
     def save(self):
         """保存数据到数据文件"""
         self.lock.acquire()
         try:
             self.open()
+            self.f.seek(0)
             self.f.write(json.dumps(self.d).encode(self.encoding))
             self.f.flush()
         finally:

@@ -25,6 +25,7 @@ class BaseConnection(object):
         """
         :param kwargs:
         """
+        self.database = None
         self.db_type = db_type
         self.debug = debug
         self.log = log
@@ -137,10 +138,10 @@ class BaseConnection(object):
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
-    def select_value(self, sql: str, params=None) -> str:
+    def select_value(self, sql: str, params=None):
         """
         获取第一列第一行的值
-        :param sql:
+        :params sql:
         :return:
         """
         self.log.debug("执行SQL:" + sql)
@@ -181,7 +182,7 @@ class BaseConnection(object):
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
-    def select_dict(self, sql: str, params=None) -> dict:
+    def select_dict(self, sql: str, params=None) -> dict or None:
         """
         获取字典数据，以字典方式返回: dict
         :param params:
@@ -327,14 +328,17 @@ class BaseConnection(object):
             self.table_column_cache[table_name] = columns
             return columns
 
-    def gen_update_dict_sql(self, dict_data: dict, table_name: str, where: str, not_update_colunms=[]):
+    def gen_update_dict_sql(self, dict_data: dict, table_name: str, where: str, not_update_colunms=None):
         """
         根据字典生成Update语句
+        :not_update_colunms: 不更新列
         :param dict_data:  列新字典
         :param table_name: 表名
         :param where: 带上where条件
         :return:
         """
+        if not_update_colunms is None:
+            not_update_colunms = []
         columns = self.__select_db_columns(table_name=table_name)
         values = {}
         if dict_data is not None:
@@ -428,33 +432,38 @@ class BaseConnection(object):
             self.commit()
         return i
 
-    def select_entity_list(self, entity_class=None, sql=None, params=None, where_entity=None, return_entity=None,
+    def select_entity_list(self,
+                           entity_class=None,
+                           sql=None,
+                           params=None,
+                           contain_entity=None,  # 生成like字段条件
+                           eq_entity=None,  # 生成等的字段条件
                            where_rel="AND",
                            page: PageInput = None):
-        if where_entity:
-            entity_util.init_entity(entity=where_entity)
-        elif return_entity:
-            entity_util.init_entity(entity=return_entity)
+        if contain_entity:
+            entity_util.init_entity(entity=contain_entity)
+        elif eq_entity:
+            entity_util.init_entity(entity=eq_entity)
         if sql is None:
-            if where_entity is not None:
+            if contain_entity is not None:
                 if entity_class is None:
-                    entity_class = where_entity.__class__
-                table_name = getattr(where_entity, "__table_name__")
-            elif return_entity is not None:
+                    entity_class = contain_entity.__class__
+                table_name = getattr(contain_entity, "__table_name__")
+            elif eq_entity is not None:
                 if entity_class is None:
-                    entity_class = return_entity.__class__
-                table_name = getattr(return_entity, "__table_name__")
+                    entity_class = eq_entity.__class__
+                table_name = getattr(eq_entity, "__table_name__")
             else:
                 table_name = getattr(entity_class, "__table_name__")
 
             sql = "SELECT * FROM " + table_name
         if params is None:
-            if where_entity is not None:
-                where, values = entity_util.where_where_entity(entity=where_entity, rel=where_rel)
+            if contain_entity is not None:
+                where, values = entity_util.where_like_entity(entity=contain_entity, rel=where_rel)
                 sql += where
                 params = values
-            elif return_entity is not None:
-                where, values = where_entity(entity=return_entity, rel=where_rel)
+            elif eq_entity is not None:
+                where, values = entity_util.where_entity(entity=eq_entity, rel=where_rel)
                 sql += where
                 params = values
         if sql is None:
@@ -481,9 +490,9 @@ class BaseConnection(object):
             values = entity_util.entity_list(dict_list=dict_list, entity_class=entity_class)
             return values
 
-    def select_entity_first(self, entity_class=None, sql=None, params=None, where_entity=None, return_entity=None):
-        ll = self.select_entity_list(entity_class, sql=sql, params=params, where_entity=where_entity,
-                                     return_entity=return_entity)
+    def select_entity_first(self, entity_class=None, sql=None, params=None, contain_entity=None, eq_entity=None):
+        ll = self.select_entity_list(entity_class, sql=sql, params=params, contain_entity=contain_entity,
+                                     eq_entity=eq_entity)
         if ll is not None and len(ll) > 0:
             return ll[0]
 
