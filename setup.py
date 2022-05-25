@@ -5,13 +5,13 @@ with open("./README.md", "rb") as fh:
 
 setup(
     name='db-hammer',
-    version='0.0.30',
+    version='0.0.31',
     description='database tools；数据库操作',
     author='hammer',
     author_email='liuzhuogood@foxmail.com',
     long_description=str(long_description, encoding='utf-8'),
     long_description_content_type="text/markdown",
-    packages=['db_hammer', 'db_hammer.util'],
+    packages=['db_hammer', 'db_hammer.util', 'db_hammer.auto'],
     package_data={'db_hammer': ['README.md', 'LICENSE']},
     install_requires=[]
 )

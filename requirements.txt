@@ -1,3 +1,4 @@
 Cython
 pymssql
 PyMySQL
+selenium
