@@ -1,3 +1,4 @@
+import atexit
 import datetime
 import logging
 import re
@@ -40,6 +41,9 @@ class BaseConnection(object):
 
     def __enter__(self):
         return self
+
+    def __del__(self):
+        self.close()
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.close()
@@ -227,8 +231,15 @@ class BaseConnection(object):
         self.log.debug("影响行数:" + str(i))
         return i
 
-    def close(self):
-        self.conn.close()
+    @atexit.register
+    def close(self, try_exception=True):
+        if try_exception:
+            try:
+                self.conn.close()
+            except:
+                pass
+        else:
+            self.conn.close()
         # self.log.debug("关闭连接")
 
     def rollback(self):
