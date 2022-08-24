@@ -1,4 +1,6 @@
 import datetime
+import inspect
+
 from db_hammer.page import PageInput
 from db_hammer.sql_exception import EntityException
 from db_hammer.util.date import date_to_str
@@ -157,7 +159,8 @@ def dic_to_entity(entity_class, record, cols=None):
     for c in cols:
         en[c] = record[str(c)]
     if type(entity_class.__class__) == type:
-        if len(cols) != 0:
+        args = inspect.getfullargspec(entity_class)
+        if len(cols) != 0 and len(args[0]) > 0:
             if callable(entity_class):
                 entity = entity_class(**en)
             else:

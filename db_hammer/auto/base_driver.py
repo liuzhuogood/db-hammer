@@ -107,70 +107,91 @@ class BaseDriver(WebDriver):
     def element_action_click(self, element):
         ActionChains(self).move_to_element(element).click(element).perform()
 
-    def wait_id_element(self, id_, timeout=10, displayed=None):
-        if displayed:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.ID, id_)) and
-                                               EC.visibility_of_element_located((By.ID, id_)))
-        else:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.ID, id_)))
-        element = self.find_element(by=By.ID, value=id_)
-        element.jclick = lambda: self.element_click(element)
-        element.aclick = lambda: self.element_action_click(element)
-        return element
+    def wait_id_element(self, id_, timeout=10, displayed=None, exception=False):
+        try:
+            if displayed:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.ID, id_)) and
+                                                   EC.visibility_of_element_located((By.ID, id_)))
+            else:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.ID, id_)))
+            element = self.find_element(by=By.ID, value=id_)
+            element.jclick = lambda: self.element_click(element)
+            element.aclick = lambda: self.element_action_click(element)
+            return element
+        except Exception as e:
+            if exception:
+                raise e
 
-    def wait_css_element(self, cls, timeout=10, displayed=None):
-        if displayed:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, cls)) and
-                                               EC.visibility_of_element_located((By.CSS_SELECTOR, cls)))
-        else:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, cls)))
-        return self.find_element(by=By.CSS_SELECTOR, value=cls)
+    def wait_css_element(self, cls, timeout=10, displayed=None, exception=False):
+        try:
+            if displayed:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, cls)) and
+                                                   EC.visibility_of_element_located((By.CSS_SELECTOR, cls)))
+            else:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.CSS_SELECTOR, cls)))
+            return self.find_element(by=By.CSS_SELECTOR, value=cls)
+        except Exception as e:
+            if exception:
+                raise e
 
-    @retry(Exception, tries=2, delay=1)
-    def wait_xpath_element(self, path, timeout=10, delay=0, next_delay=0, displayed=None):
-        time.sleep(delay)
-        if displayed:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)) and
-                                               EC.visibility_of_element_located((By.XPATH, path)))
-        else:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)))
-        element = self.find_element(by=By.XPATH, value=path)
-        element.jclick = lambda: self.element_click(element)
-        element.alick = lambda: self.element_action_click(element)
-        time.sleep(next_delay)
-        return element
+    def wait_xpath_element(self, path, timeout=10, delay=0, next_delay=0, displayed=None, exception=False):
+        try:
+            time.sleep(delay)
+            if displayed:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)) and
+                                                   EC.visibility_of_element_located((By.XPATH, path)))
+            else:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)))
+            element = self.find_element(by=By.XPATH, value=path)
+            element.jclick = lambda: self.element_click(element)
+            element.alick = lambda: self.element_action_click(element)
+            time.sleep(next_delay)
+            return element
+        except Exception as e:
+            if exception:
+                raise e
 
-    @retry(Exception, tries=2, delay=1)
-    def wait_xpath_elements(self, path, timeout=10, delay=0, next_delay=0, displayed=None):
-        time.sleep(delay)
-        if displayed:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)) and
-                                               EC.visibility_of_element_located((By.XPATH, path)))
-        else:
-            WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)))
-        elements = self.find_elements(by=By.XPATH, value=path)
-        for e in elements:
-            e.jclick = lambda: self.element_click(e)
-            e.aclick = lambda: self.element_action_click(e)
-        time.sleep(next_delay)
-        return elements
+    def wait_xpath_elements(self, path, timeout=10, delay=0, next_delay=0, displayed=None, exception=False):
+        try:
+            time.sleep(delay)
+            if displayed:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)) and
+                                                   EC.visibility_of_element_located((By.XPATH, path)))
+            else:
+                WebDriverWait(self, timeout).until(EC.presence_of_element_located((By.XPATH, path)))
+            elements = self.find_elements(by=By.XPATH, value=path)
+            for e in elements:
+                e.jclick = lambda: self.element_click(e)
+                e.aclick = lambda: self.element_action_click(e)
+            time.sleep(next_delay)
+            return elements
+        except Exception as e:
+            if exception:
+                raise e
 
-    @retry(Exception, tries=10, delay=3, backoff=2)
-    def regex_findall(self, rule):
-        text = self.page_source
-        result = re.findall(rule, text)
-        if len(result) == 0:
-            raise Exception("not find")
-        return result
+    def regex_findall(self, rule, exception=False):
+        try:
+            text = self.page_source
+            result = re.findall(rule, text)
+            if len(result) == 0:
+                raise Exception("not find")
+            return result
+        except Exception as e:
+            if exception:
+                raise e
 
-    def wait_url(self, url, timeout=10):
-        while timeout > 0:
-            time.sleep(1)
-            timeout -= 1
-            if str(self.current_url).startswith(url):
-                return
+    def wait_url(self, url, timeout=10, exception=False):
+        try:
+            while timeout > 0:
+                time.sleep(1)
+                timeout -= 1
+                if str(self.current_url).startswith(url):
+                    return
 
-        raise Exception("TimeOut wait url")
+            raise Exception("TimeOut wait url")
+        except Exception as e:
+            if exception:
+                raise e
 
     def save_screen(self, name, screenshot_path="./screenshot", delay=1):
         print(name)
@@ -180,7 +201,7 @@ class BaseDriver(WebDriver):
         self.save_screenshot(path)
         self.screenshot_list.append(os.path.abspath(path))
 
-    def wait_for_one(self, elements, timeout=10, check_second=0.5):
+    def wait_for_one(self, elements, timeout=10, check_second=0.5, exception=False):
         """
         r, v = self.firefox.wait_for_one({
             False: [{"re": "没有找到相关企业",displayed:False}, {"re": "我们只是确认一下你不是机器人"}],
@@ -254,7 +275,8 @@ class BaseDriver(WebDriver):
 
             time.sleep(check_second)
             timeout -= check_second
-        raise TimeoutError()
+        if exception:
+            raise TimeoutError()
 
     def get_logs(self):
         logs = [json.loads(log['message'])['message'] for log in self.get_log('performance')]

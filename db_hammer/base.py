@@ -231,7 +231,6 @@ class BaseConnection(object):
         self.log.debug("影响行数:" + str(i))
         return i
 
-    @atexit.register
     def close(self, try_exception=True):
         if try_exception:
             try:

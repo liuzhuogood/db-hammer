@@ -55,6 +55,18 @@ def get_dir_files(path: str, mode='F', absolute=False, filter_re=""):
             if mode == "AFD":
                 if re.match(filter_re, root) is not None:
                     aa.append(root)
+                if absolute:
+                    ff = []
+                    for f in files:
+                        if re.match(filter_re, os.path.join(root, f)) is not None:
+                            ff.append(os.path.join(root, f))
+                    files = ff
+                aa += files
+                if os.path.isdir(root):
+                    if re.match(filter_re, root) is not None:
+                        aa.append(root)
+
+
         return aa
 
 
@@ -69,5 +81,5 @@ def zip_dir(dir_path, out):
 
 
 if __name__ == '__main__':
-    print(get_dir_files(path="/Users/lawman/", absolute=True, mode="F", filter_re=".*msi$"))
+    print(get_dir_files(path="/Users/liuzhuo/code/FamilCloud/mycloud-server/gencode", absolute=True, mode="AFD"))
     # print(re.match("", "1234456"))
