@@ -16,22 +16,26 @@ class PostgreSQLConnection(BaseConnection):
 
     def __init__(self, **kwargs):
         self.db_type = DB_TYPE_POSTGRESQL
-        if kwargs.get("host", None) is None:
-            raise Exception("host")
-        if kwargs.get("user", None) is None:
-            raise Exception("user")
-        if kwargs.get("database", None) is None:
-            raise Exception("database")
-        if kwargs.get("pwd", None) is None:
-            raise Exception("pwd")
+        if kwargs.get("conn", None) is None:
+            if kwargs.get("host", None) is None:
+                raise Exception("host")
+            if kwargs.get("user", None) is None:
+                raise Exception("user")
+            if kwargs.get("database", None) is None:
+                raise Exception("database")
+            if kwargs.get("pwd", None) is None:
+                raise Exception("pwd")
         port = kwargs.get("port", 5432)
+        kwargs["autocommit"] = kwargs.get("autocommit", False)
 
         super().__init__(**kwargs)
-        self.conn = psycopg2.connect(database=kwargs["database"],
-                                     user=kwargs["user"],
-                                     password=kwargs["pwd"],
-                                     host=kwargs["host"],
-                                     port=port)
+        if not self.conn:
+            self.conn = psycopg2.connect(database=kwargs["database"],
+                                         user=kwargs["user"],
+                                         password=kwargs["pwd"],
+                                         host=kwargs["host"],
+                                         port=port,
+                                         autocommit=kwargs["autocommit"])
 
         self.cursor = self.conn.cursor()
 

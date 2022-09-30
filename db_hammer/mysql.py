@@ -35,15 +35,18 @@ class MySQLConnection(BaseConnection):
                  caps=None,
                  **kwargs):
         self.db_type = DB_TYPE_MYSQL
-        if kwargs.get("host", None) is None:
-            raise Exception("host")
-        if kwargs.get("user", None) is None:
-            raise Exception("user")
-        if kwargs.get("password", None) is None:
-            raise Exception("password")
+        if kwargs.get("conn", None) is None:
+            if kwargs.get("host", None) is None:
+                raise Exception("host")
+            if kwargs.get("user", None) is None:
+                raise Exception("user")
+            if kwargs.get("password", None) is None:
+                raise Exception("password")
         kwargs["charset"] = kwargs.get("charset", "utf8")
+        kwargs["autocommit"] = kwargs.get("autocommit", False)
         super().__init__(debug=debug, db_type=db_type, log=log, caps=caps, **kwargs)
-        self.conn = pymysql.connect(**kwargs)
+        if not self.conn:
+            self.conn = pymysql.connect(**kwargs)
         self.cursor = self.conn.cursor()
 
     def convert_str(self, s: str):

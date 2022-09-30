@@ -159,17 +159,25 @@ def dic_to_entity(entity_class, record, cols=None):
     for c in cols:
         en[c] = record[str(c)]
     if type(entity_class.__class__) == type:
-        args = inspect.getfullargspec(entity_class)
-        if len(cols) != 0 and len(args[0]) > 0:
+        try:
+            args = inspect.getfullargspec(entity_class)
+            if len(cols) != 0 and len(args[0]) > 0:
+                if callable(entity_class):
+                    entity = entity_class(**en)
+                else:
+                    entity = entity_class.__class__()
+                    for c in record.keys():
+                        setattr(entity, c, record[str(c)])
+            else:
+                # 说明没有定义dataclasses
+                entity = entity_class()
+                for c in record.keys():
+                    setattr(entity, c, record[str(c)])
+        except:
             if callable(entity_class):
                 entity = entity_class(**en)
             else:
                 entity = entity_class.__class__()
-                for c in record.keys():
-                    setattr(entity, c, record[str(c)])
-        else:
-            # 说明没有定义dataclasses
-            entity = entity_class()
             for c in record.keys():
                 setattr(entity, c, record[str(c)])
     else:

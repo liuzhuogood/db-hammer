@@ -15,3 +15,7 @@ class FetchRowsException(Exception):
 class EntityException(Exception):
     """实体对象错误"""
     pass
+
+
+class InsertException(Exception):
+    pass

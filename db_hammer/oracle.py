@@ -16,16 +16,18 @@ class OracleConnection(BaseConnection):
 
     def __init__(self, **kwargs):
         self.db_type = DB_TYPE_ORACLE
-        if kwargs.get("host", None) is None:
-            raise Exception("host")
-        if kwargs.get("user", None) is None:
-            raise Exception("user")
-        if kwargs.get("database", None) is None:
-            raise Exception("database")
-        if kwargs.get("pwd", None) is None:
-            raise Exception("pwd")
+        if kwargs.get("conn", None) is None:
+            if kwargs.get("host", None) is None:
+                raise Exception("host")
+            if kwargs.get("user", None) is None:
+                raise Exception("user")
+            if kwargs.get("database", None) is None:
+                raise Exception("database")
+            if kwargs.get("pwd", None) is None:
+                raise Exception("pwd")
         port = kwargs.get("port", 1521)
         nlsLang = kwargs.get("nlsLang", "SIMPLIFIED CHINESE_CHINA.AL32UTF8")
+        kwargs["autocommit"] = kwargs.get("autocommit", False)
         super().__init__(**kwargs)
         CONNECT_TNS = False
         # NLS_LANG = 'SIMPLIFIED CHINESE_CHINA.ZHS16GBK'
@@ -36,25 +38,26 @@ class OracleConnection(BaseConnection):
             sys.path.append(oracleHome)
             os.environ['PATH'] = oracleHome
             os.environ['ORACLE_HOME'] = oracleHome
-        self.conn = None
-        if not CONNECT_TNS:
-            try:
-                self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"],
-                                              f'{kwargs["host"]}:{port}/{kwargs["database"]}',
-                                              encoding="UTF-8", nencoding="UTF-8")
-            except Exception as e:
-                if "12514" in str(e):
-                    CONNECT_TNS = True
-                else:
+
+        if not self.conn:
+            if not CONNECT_TNS:
+                try:
+                    self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"],
+                                                  f'{kwargs["host"]}:{port}/{kwargs["database"]}',
+                                                  encoding="UTF-8", nencoding="UTF-8", autocommit=kwargs["autocommit"])
+                except Exception as e:
+                    if "12514" in str(e):
+                        CONNECT_TNS = True
+                    else:
+                        raise e
+            if CONNECT_TNS:
+                try:
+                    print("尝试TNS..")
+                    dsn = cx_Oracle.makedsn(kwargs["host"], port, service_name=kwargs["database"])
+                    self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"], dsn=dsn, encoding="UTF-8",
+                                                  nencoding="UTF-8")
+                except Exception as e:
                     raise e
-        if CONNECT_TNS:
-            try:
-                print("尝试TNS..")
-                dsn = cx_Oracle.makedsn(kwargs["host"], port, service_name=kwargs["database"])
-                self.conn = cx_Oracle.connect(kwargs["user"], kwargs["pwd"], dsn=dsn, encoding="UTF-8",
-                                              nencoding="UTF-8")
-            except Exception as e:
-                raise e
         self.cursor = self.conn.cursor()
 
     def db_data_type_mapping(self):

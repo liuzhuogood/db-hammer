@@ -7,7 +7,7 @@ from enum import Enum
 import db_hammer.entity_util as entity_util
 from db_hammer import DB_TYPE_MYSQL
 from db_hammer.page import PageOutput, PageInput
-from db_hammer.sql_exception import SqlException, FetchRowsException, NoExistException
+from db_hammer.sql_exception import SqlException, FetchRowsException, NoExistException, InsertException
 from db_hammer.util.date import date_to_str
 
 
@@ -22,6 +22,8 @@ class BaseConnection(object):
                  db_type=DB_TYPE_MYSQL,
                  log=logging.getLogger(__name__),
                  caps=None,
+                 conn=None,
+                 auto_commit=False,
                  **kwargs):
         """
         :param kwargs:
@@ -31,8 +33,9 @@ class BaseConnection(object):
         self.debug = debug
         self.log = log
         self.caps = caps  # A:大写 a:小写
-        self.conn = None
+        self.conn = conn
         self.cursor = None
+        self.auto_commit = auto_commit
         self.table_column_cache = {}
         if self.debug:
             logging.basicConfig(level=logging.DEBUG,
@@ -530,3 +533,37 @@ class BaseConnection(object):
         ll = self.select_entity_list(entity, sql=sql, params=params)
         if ll is not None and len(ll) > 0:
             return ll[0]
+
+    def insert_by_dict(self, row, tablename, check_field_key=False,replace_into=False) -> int:
+        """
+        通过字典插入数据
+        :row
+        :tablename
+        :check_field_key 是否检查字段是否在表中存在（注意如果不检查可能会被SQL注入）
+        """
+        if check_field_key:
+            columns = self.__select_db_columns(table_name=tablename)
+            cols = [col["COLUMN_NAME"] for col in columns]
+            for key in row.keys:
+                if key not in cols:
+                    raise InsertException(f"{tablename}表不存在Key：{key}的字段")
+        if replace_into:
+            sql = f"REPLACE INTO {tablename}({','.join(row.keys())}) VALUES (:{',:'.join(row.keys())})"
+        else:
+            sql = f"INSERT INTO {tablename}({','.join(row.keys())}) VALUES (:{',:'.join(row.keys())})"
+        return self.execute(sql, row)
+
+    def many_insert_by_dict(self, rows, tablename, replace_into=False):
+        """通过字典列表插入数据，请注意方法可能有SQL注入问题"""
+        header = None
+        values = []
+        for row in rows:
+            if header is None:
+                header = ','.join(row.keys())
+            value = ','.join([f"'{v}'" if v else 'null' for v in row.values()])
+            values.append(f"({value})")
+        if replace_into:
+            sql = f"REPLACE INTO {tablename} ({header}) VALUES {','.join(values)}"
+        else:
+            sql = f"INSERT INTO {tablename} ({header}) VALUES {','.join(values)}"
+        return self.execute(sql)

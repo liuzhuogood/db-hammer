@@ -20,22 +20,26 @@ except ImportError:
 class MsSQLConnection(BaseConnection):
     def __init__(self, **kwargs):
         self.db_type = DB_TYPE_MSSQL
-        if kwargs.get("host", None) is None:
-            raise Exception("host")
-        if kwargs.get("user", None) is None:
-            raise Exception("user")
-        if kwargs.get("database", None) is None:
-            raise Exception("database")
-        if kwargs.get("pwd", None) is None:
-            raise Exception("pwd")
+        if kwargs.get("conn", None) is None:
+            if kwargs.get("host", None) is None:
+                raise Exception("host")
+            if kwargs.get("user", None) is None:
+                raise Exception("user")
+            if kwargs.get("database", None) is None:
+                raise Exception("database")
+            if kwargs.get("pwd", None) is None:
+                raise Exception("pwd")
         port = kwargs.get("port", 1433)
         charset = kwargs.get("charset", "utf8")
         tds_version = kwargs.get("tds_version", "7.0")
+        kwargs["autocommit"] = kwargs.get("autocommit", False)
         super().__init__(**kwargs)
-        self.conn = pymssql.connect(server=kwargs["host"], user=kwargs["user"],
-                                    password=kwargs["pwd"],
-                                    port=port,
-                                    charset=charset,
-                                    tds_version=tds_version,
-                                    database=kwargs["database"])
+        if not self.conn:
+            self.conn = pymssql.connect(server=kwargs["host"], user=kwargs["user"],
+                                        password=kwargs["pwd"],
+                                        port=port,
+                                        charset=charset,
+                                        tds_version=tds_version,
+                                        autocommit=kwargs["autocommit"],
+                                        database=kwargs["database"])
         self.cursor = self.conn.cursor()
