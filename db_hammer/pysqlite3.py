@@ -9,6 +9,7 @@ class Sqlite3Connection(BaseConnection):
     def __init__(self, **kwargs):
         self.db_type = DB_TYPE_SQLITE
         super().__init__(**kwargs)
+        self.db_type = DB_TYPE_SQLITE
         database = kwargs.get("database", None)
         if database is None:
             raise Exception("database")

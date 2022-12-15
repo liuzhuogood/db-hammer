@@ -29,6 +29,7 @@ class OracleConnection(BaseConnection):
         nlsLang = kwargs.get("nlsLang", "SIMPLIFIED CHINESE_CHINA.AL32UTF8")
         kwargs["autocommit"] = kwargs.get("autocommit", False)
         super().__init__(**kwargs)
+        self.db_type = DB_TYPE_ORACLE
         CONNECT_TNS = False
         # NLS_LANG = 'SIMPLIFIED CHINESE_CHINA.ZHS16GBK'
         # NLS_LANG = 'SIMPLIFIED CHINESE_CHINA.AL32UTF8'

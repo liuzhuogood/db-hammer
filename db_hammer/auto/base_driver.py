@@ -12,15 +12,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.common.by import By
 
-
-def date_to_str(date=None, format_str="%Y-%m-%d %H:%M:%S"):
-    """时期格式化成字符
-        :param date: 时间
-        :param format_str: %Y-%m-%d %H:%M:%S
-    """
-    if date is None:
-        date = datetime.datetime.now()
-    return date.strftime(format_str)
+from db_hammer.util.date import date_to_str
 
 
 class BaseDriver(WebDriver):

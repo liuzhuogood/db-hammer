@@ -61,13 +61,9 @@ class BaseConnection(object):
         """
 
         count_sql = "select COUNT(0) from ( %s ) temp_count" % sql
-        count_sql, params = self.sql_params(count_sql, params)
-        self.log.debug("执行SQL:" + count_sql)
-        self.log.debug("参数:" + str(params))
-        self.cursor.execute(count_sql, params)
+        self.execute(count_sql, params)
         data = self.cursor.fetchone()
         count_rows = data[0]
-        self.log.debug("影响行数:" + str(len(data)))
         num = count_rows // page_size
         if count_rows > page_size * num:
             num = num + 1
@@ -105,22 +101,14 @@ class BaseConnection(object):
         :return:
         """
         params = kwargs.get("params", None)
-        page_end = kwargs["page_end"]
-        if page_end is None:
-            page_end = page_start + 1
-        add_headers = kwargs["add_headers"]
-        if add_headers is None:
-            add_headers = False
+        page_end = kwargs.get("page_end", page_start + 1)
+        add_headers = kwargs.get("add_headers", False)
 
         start = page_size * (page_start - 1)
         end = page_size * (page_end - page_start)
         page_sql = """SELECT * FROM ( %s ) temp_page LIMIT %d,%d """ % (sql, start, end)
-        self.log.debug("执行SQL:" + page_sql)
-        page_sql, params = self.sql_params(page_sql, params)
-        self.log.debug("参数:" + str(params))
-        self.cursor.execute(page_sql, params)
+        self.execute(page_sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("影响行数:" + str(len(data)))
         if add_headers:
             col_names = self.cursor.description
             list(data).insert(col_names, 0)
@@ -151,9 +139,7 @@ class BaseConnection(object):
         :params sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql)
-        _sql, params = self.sql_params(sql, params)
-        self.cursor.execute(_sql, params)
+        self.execute(sql, params)
         data = self.cursor.fetchone()
         if data is None:
             return None
@@ -165,12 +151,8 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql)
-        self.log.debug("参数:" + str(params))
-        _sql, params = self.sql_params(sql, params)
-        self.cursor.execute(_sql, params)
+        self.execute(sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("影响行数:" + str(len(data)))
         return data
 
     def select_dict_list(self, sql: str, params=None) -> list:
@@ -180,12 +162,8 @@ class BaseConnection(object):
         :param sql:
         :return:
         """
-        self.log.debug("执行SQL:" + sql)
-        self.log.debug("参数:" + str(params))
-        _sql, params = self.sql_params(sql, params)
-        self.cursor.execute(_sql, params)
+        self.execute(sql, params)
         data = self.cursor.fetchall()
-        self.log.debug("影响行数:" + str(len(data)))
         col_names = self.cursor.description
         return self._data_to_map(col_names, data)
 
@@ -534,24 +512,54 @@ class BaseConnection(object):
         if ll is not None and len(ll) > 0:
             return ll[0]
 
-    def insert_by_dict(self, row, tablename, check_field_key=False,replace_into=False) -> int:
+    def insert_by_dict(self, row, tablename, check_field_key=False, replace_into=False, ignore_keys=None) -> int:
         """
         通过字典插入数据
         :row
         :tablename
         :check_field_key 是否检查字段是否在表中存在（注意如果不检查可能会被SQL注入）
+        :ignore_keys 忽略的key
         """
+        if ignore_keys is None:
+            ignore_keys = []
         if check_field_key:
             columns = self.__select_db_columns(table_name=tablename)
             cols = [col["COLUMN_NAME"] for col in columns]
             for key in row.keys:
                 if key not in cols:
                     raise InsertException(f"{tablename}表不存在Key：{key}的字段")
+        new_rows = {}
+        for k in row.keys:
+            if k not in ignore_keys:
+                new_rows[k] = row[k]
         if replace_into:
-            sql = f"REPLACE INTO {tablename}({','.join(row.keys())}) VALUES (:{',:'.join(row.keys())})"
+            sql = f"REPLACE INTO {tablename}({','.join(new_rows.keys())}) VALUES (:{',:'.join(new_rows.keys())})"
         else:
-            sql = f"INSERT INTO {tablename}({','.join(row.keys())}) VALUES (:{',:'.join(row.keys())})"
-        return self.execute(sql, row)
+            sql = f"INSERT INTO {tablename}({','.join(new_rows.keys())}) VALUES (:{',:'.join(new_rows.keys())})"
+        return self.execute(sql, new_rows)
+
+    def update_by_dict(self, row, tablename, check_field_key=False, ignore_keys=None, where_sql="") -> int:
+        """
+        通过字典更新数据
+        :row
+        :tablename
+        :check_field_key 是否检查字段是否在表中存在（注意如果不检查可能会被SQL注入）
+        """
+        if ignore_keys is None:
+            ignore_keys = []
+        if check_field_key:
+            columns = self.__select_db_columns(table_name=tablename)
+            cols = [col["COLUMN_NAME"] for col in columns]
+            for key in row.keys:
+                if key not in cols:
+                    raise InsertException(f"{tablename}表不存在Key：{key}的字段")
+
+        sets = []
+        for k in row.keys():
+            if k not in ignore_keys:
+                sets.append(f"{k}={row[k]}")
+        update_sql = f"UPDATE {tablename} SET {','.join(sets)} " + where_sql
+        return self.execute(update_sql, row)
 
     def many_insert_by_dict(self, rows, tablename, replace_into=False):
         """通过字典列表插入数据，请注意方法可能有SQL注入问题"""

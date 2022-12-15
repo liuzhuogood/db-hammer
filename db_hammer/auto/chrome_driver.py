@@ -38,10 +38,7 @@ class ChromeDriver(BaseDriver, WebDriver):
         if os.path.exists(".webdriver"):
             executable_path = open(".webdriver", "r").read()
         else:
-            executable_path = ChromeDriverManager(
-                url="https://npm.taobao.org/mirrors/chromedriver/",
-                latest_release_url="https://cdn.npm.taobao.org/dist/chromedriver/LATEST_RELEASE"
-            ).install()
+            executable_path = ChromeDriverManager().install()
             open(".webdriver", "w+").write(executable_path)
 
         # d = DesiredCapabilities.CHROME
@@ -80,8 +77,8 @@ class ChromeDriver(BaseDriver, WebDriver):
             prefs.update({"profile.managed_default_content_settings.images": 2})
 
         chrome_options.add_experimental_option('prefs', prefs)
-        # super().__init__(executable_path=executable_path, desired_capabilities=d, options=chrome_options)
         super().__init__(executable_path=executable_path, options=chrome_options)
+        # super().__init__(executable_path=executable_path, options=chrome_options)
         self.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
             Object.defineProperty(navigator, 'webdriver', {

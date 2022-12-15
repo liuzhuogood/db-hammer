@@ -1,4 +1,6 @@
+import logging
 import socket
+import functools
 
 
 def is_inuse(ip, port):
@@ -60,3 +62,27 @@ def recv_end(the_socket, SOCKET_END_TAG):
     if len(total_data) == 0:
         return None
     return b''.join(total_data)
+
+
+def one_instance(func):
+    """
+    装饰器
+    如果已经有实例在跑则退出
+    :return:
+    """
+
+    @functools.wraps(func)
+    def f(*args, **kwargs):
+        import socket
+        try:
+            # 全局属性，否则变量会在方法退出后被销毁
+            global s
+            s = socket.socket()
+            host = socket.gethostname()
+            s.bind((host, 60123))
+        except:
+            logging.warning('already has an instance')
+            return None
+        return func(*args, **kwargs)
+
+    return f

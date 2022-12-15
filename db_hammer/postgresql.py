@@ -27,6 +27,7 @@ class PostgreSQLConnection(BaseConnection):
                 raise Exception("pwd")
         port = kwargs.get("port", 5432)
         kwargs["autocommit"] = kwargs.get("autocommit", False)
+        self.db_type = DB_TYPE_POSTGRESQL
 
         super().__init__(**kwargs)
         if not self.conn:
