@@ -35,12 +35,6 @@ class ChromeDriver(BaseDriver, WebDriver):
         }
         prefs = {}
 
-        if os.path.exists(".webdriver"):
-            executable_path = open(".webdriver", "r").read()
-        else:
-            executable_path = ChromeDriverManager().install()
-            open(".webdriver", "w+").write(executable_path)
-
         # d = DesiredCapabilities.CHROME
         # d['loggingPrefs'] = {'performance': 'ALL'}
 
@@ -77,7 +71,7 @@ class ChromeDriver(BaseDriver, WebDriver):
             prefs.update({"profile.managed_default_content_settings.images": 2})
 
         chrome_options.add_experimental_option('prefs', prefs)
-        super().__init__(executable_path=executable_path, options=chrome_options)
+        super().__init__(options=chrome_options)
         # super().__init__(executable_path=executable_path, options=chrome_options)
         self.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
             "source": """
@@ -91,4 +85,3 @@ class ChromeDriver(BaseDriver, WebDriver):
             # "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 15_0_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 micromessenger/8.0.15(0x18000f27) NetType/4G Language/zh_CN"
         })
         self.set_window_position(0, 0)
-        self.set_window_size(1200, 1000)
