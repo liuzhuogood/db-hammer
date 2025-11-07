@@ -1,0 +1,18 @@
+# Default MCP server configuration template
+metadata:
+  name: db-hammer-mcp
+  description: Sample configuration for db-hammer MCP server
+connections:
+  - id: local-sqlite
+    type: sqlite
+    database: ./db.sqlite
+authentication:
+  - name: default
+    api_keys:
+      - change-me
+security:
+  require_tls: false
+  allowed_origins: []
+export:
+  storage_path: ./exports
+  cleanup_after_hours: 24

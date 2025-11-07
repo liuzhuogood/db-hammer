@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-6">
+    <section class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Configuration</h2>
+        <p class="text-muted small">
+          Load and update the MCP server configuration. Changes are persisted to the
+          configured YAML file.
+        </p>
+        <div class="mb-3">
+          <label for="config-path" class="form-label">Config Path</label>
+          <input id="config-path" class="form-control" type="text" value="" readonly />
+        </div>
+        <div class="d-flex gap-2">
+          <button id="load-config" class="btn btn-primary">Load</button>
+          <button id="save-config" class="btn btn-outline-secondary">Save</button>
+        </div>
+      </div>
+    </section>
+  </div>
+  <div class="col-12 col-lg-6">
+    <section class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="h5 mb-3">Connections</h2>
+        <p class="text-muted small">
+          Use the tools menu to manage connections through the MCP API.
+        </p>
+        <pre id="connections" class="bg-light p-3 rounded small">Loading...</pre>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

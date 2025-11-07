@@ -1,0 +1,12 @@
+body {
+  background-color: #f8f9fa;
+}
+
+.card {
+  border: none;
+}
+
+pre {
+  max-height: 320px;
+  overflow: auto;
+}

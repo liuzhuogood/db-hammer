@@ -1,0 +1,12 @@
+# Example connection definitions
+connections:
+  - id: sqlite-demo
+    type: sqlite
+    database: ./examples/demo.db
+  - id: analytics-postgres
+    type: postgresql
+    host: db.example.com
+    port: 5432
+    user: analytics
+    password: secret
+    database: analytics
