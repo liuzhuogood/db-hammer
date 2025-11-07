@@ -2,3 +2,5 @@
 /dist/
 /db_test/
 /db_hammer.egg-info/
+__pycache__/
+*.pyc

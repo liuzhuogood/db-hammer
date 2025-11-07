@@ -1,0 +1,21 @@
+{
+  "host": "127.0.0.1",
+  "port": 8765,
+  "log_level": "DEBUG",
+  "storage_path": "./tests/exports",
+  "security": {
+    "enable_token_auth": false,
+    "token_secret": null,
+    "allowed_origins": []
+  },
+  "databases": [
+    {
+      "name": "sqlite",
+      "type": "sqlite",
+      "dsn": {
+        "database": "./tests/test.db"
+      },
+      "pool_size": 1
+    }
+  ]
+}

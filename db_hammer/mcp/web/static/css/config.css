@@ -1,0 +1,65 @@
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  margin: 0;
+  background: #f5f6f8;
+  color: #1f2933;
+}
+
+header {
+  background: #1f3a5f;
+  color: #fff;
+  padding: 1.5rem 2rem;
+}
+
+main {
+  display: flex;
+  gap: 2rem;
+  padding: 2rem;
+}
+
+.config-panel,
+.databases {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  flex: 1;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+  font-size: 0.95rem;
+}
+
+input[type="text"],
+input[type="number"] {
+  padding: 0.6rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  margin-top: 0.4rem;
+}
+
+button {
+  background: #1f3a5f;
+  color: #fff;
+  border: none;
+  padding: 0.7rem 1.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #274d7f;
+}
+
+fieldset {
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  padding: 1rem;
+}
+
+legend {
+  padding: 0 0.5rem;
+}

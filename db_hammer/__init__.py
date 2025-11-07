@@ -8,3 +8,14 @@ DB_TYPE_ORACLE = "ORACLE"
 DB_TYPE_POSTGRESQL = "POSTGRESQL"
 DB_TYPE_SQLITE = "SQLITE"
 DB_TYPE_MSSQL = "MSSQL"
+
+from . import mcp  # noqa: F401
+
+__all__ = [
+    "DB_TYPE_MYSQL",
+    "DB_TYPE_ORACLE",
+    "DB_TYPE_POSTGRESQL",
+    "DB_TYPE_SQLITE",
+    "DB_TYPE_MSSQL",
+    "mcp",
+]
