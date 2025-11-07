@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="utf-8" />
+    <title>db-hammer MCP 配置</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/config.css') }}" />
+    <script defer src="{{ url_for('static', filename='js/config.js') }}"></script>
+</head>
+<body>
+    <header class="page-header">
+        <h1>db-hammer MCP Server 配置</h1>
+        <div class="actions">
+            <button id="format-button">格式化</button>
+            <button id="save-button">保存配置</button>
+            <button id="test-button">测试连接</button>
+        </div>
+    </header>
+    <main class="page-body">
+        <textarea id="config-editor" aria-label="配置内容"></textarea>
+        <section id="results" aria-live="polite"></section>
+    </main>
+</body>
+</html>

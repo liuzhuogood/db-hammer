@@ -1,0 +1,23 @@
+{
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8800,
+    "debug": false,
+    "web_enabled": true
+  },
+  "security": {
+    "enabled": true,
+    "default_api_keys": [
+      "change-me"
+    ],
+    "providers": []
+  },
+  "connections": [
+    {
+      "id": "local-sqlite",
+      "type": "sqlite",
+      "database": "./example.db",
+      "name": "本地SQLite示例"
+    }
+  ]
+}

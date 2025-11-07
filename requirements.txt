@@ -2,3 +2,11 @@ Cython
 pymssql
 PyMySQL
 selenium
+fastmcp>=0.1.0
+pydantic>=2.0.0
+PyYAML>=6.0.0
+cryptography>=3.4.0
+python-jose[cryptography]>=3.3.0
+Flask>=2.3.0
+requests>=2.31.0
+pytest
