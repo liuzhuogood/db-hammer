@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>db-hammer MCP 管理</title>
+    <link rel="stylesheet" href="/static/css/config.css" />
+</head>
+<body>
+<header class="page-header">
+    <h1>db-hammer MCP 控制台</h1>
+</header>
+<main>
+    <section class="config-panel">
+        <h2>服务配置</h2>
+        <div class="config-actions">
+            <button id="refresh-config">刷新配置</button>
+            <button id="save-config">保存配置</button>
+        </div>
+        <textarea id="config-editor" rows="18" spellcheck="false"></textarea>
+        <div class="status" id="config-status"></div>
+    </section>
+
+    <section class="connection-test">
+        <h2>连接测试</h2>
+        <textarea id="test-payload" rows="8" placeholder='{"type": "SQLITE", "params": {"database": "demo.db"}}'></textarea>
+        <button id="run-test">测试连接</button>
+        <div class="status" id="test-status"></div>
+    </section>
+</main>
+<script src="/static/js/config.js"></script>
+</body>
+</html>

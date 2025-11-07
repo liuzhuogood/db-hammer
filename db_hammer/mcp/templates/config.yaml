@@ -1,0 +1,28 @@
+# db-hammer MCP 配置模板
+connections:
+  default_sqlite:
+    name: default_sqlite
+    type: SQLITE
+    description: 默认SQLite演示库
+    params:
+      database: ./demo.db
+    auto_connect: true
+    pool_size: 5
+
+default_connection: default_sqlite
+
+auth:
+  api_keys:
+    - demo-key
+  jwt_secret: change-me
+  token_expire_seconds: 3600
+  allow_anonymous: false
+
+exports:
+  storage_path: ./exports
+  auto_cleanup: true
+  retention_hours: 24
+
+audit:
+  enabled: true
+  log_path: ./logs/mcp.log
