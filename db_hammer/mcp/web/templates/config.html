@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="config-panel">
+  <h2>服务器信息</h2>
+  <form id="config-form">
+    <label>Host<input type="text" name="host" value="{{ config.host }}" /></label>
+    <label>Port<input type="number" name="port" value="{{ config.port }}" /></label>
+    <label>导出目录<input type="text" name="storage_path" value="{{ config.storage_path }}" /></label>
+    <label>日志级别<input type="text" name="log_level" value="{{ config.log_level }}" /></label>
+    <fieldset>
+      <legend>安全设置</legend>
+      <label>启用Token认证<input type="checkbox" name="security.enable_token_auth" {% if config.security.enable_token_auth %}checked{% endif %} /></label>
+      <label>Token Secret<input type="text" name="security.token_secret" value="{{ config.security.token_secret or '' }}" /></label>
+    </fieldset>
+    <button type="submit">保存配置</button>
+  </form>
+</section>
+<section class="databases">
+  <h2>预配置数据库</h2>
+  <div id="database-list"></div>
+</section>
+{% endblock %}

@@ -1,0 +1,8 @@
+[
+  {
+    "name": "sample-sqlite",
+    "type": "sqlite",
+    "dsn": {"database": "./example.sqlite"},
+    "pool_size": 1
+  }
+]

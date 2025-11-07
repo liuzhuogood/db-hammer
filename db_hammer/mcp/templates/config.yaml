@@ -1,0 +1,12 @@
+{
+  "host": "0.0.0.0",
+  "port": 8000,
+  "log_level": "INFO",
+  "storage_path": "./exports",
+  "security": {
+    "enable_token_auth": false,
+    "token_secret": null,
+    "allowed_origins": []
+  },
+  "databases": []
+}

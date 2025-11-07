@@ -134,3 +134,13 @@ db_hammer.util.sim_email
 
 
 
+
+## MCP Server
+
+使用 `db_hammer_mcp` 启动 MCP server，支持多数据库连接、SQL 执行和数据导出。
+
+安装 MCP 扩展:
+
+```bash
+pip install db-hammer[mcp]
+```

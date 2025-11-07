@@ -1,0 +1,4 @@
+- name: local-sqlite
+  type: sqlite
+  dsn:
+    database: tests/test.db
