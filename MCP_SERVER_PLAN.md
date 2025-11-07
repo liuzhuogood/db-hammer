@@ -77,8 +77,6 @@ db_hammer/
 │   │   │   ├── mode-json.js     # JSON模式
 │   │   │   └── config.js        # 配置页面脚本
 │   │   └── img/                 # 图片资源
-│   └── downloads/               # 第三方库下载脚本
-│       └── download_ace.js      # 下载Ace.js脚本
 ├── cli/                         # 命令行工具
 │   ├── __init__.py
 │   └── mcp_server.py            # MCP server启动脚本
