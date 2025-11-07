@@ -1,0 +1,8 @@
+connections:
+  - id: test-sqlite
+    type: sqlite
+    database: "{database_path}"
+authentication:
+  - name: test
+    api_keys:
+      - secret
