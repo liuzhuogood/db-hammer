@@ -1,0 +1,8 @@
+[
+  {
+    "id": "local-sqlite",
+    "type": "sqlite",
+    "database": "./example.db",
+    "name": "本地SQLite示例"
+  }
+]
