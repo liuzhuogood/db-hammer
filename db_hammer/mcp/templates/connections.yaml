@@ -1,0 +1,17 @@
+# 连接模板
+- name: analytics
+  type: POSTGRESQL
+  params:
+    host: localhost
+    port: 5432
+    user: analyst
+    password: secret
+    database: analytics
+- name: reporting
+  type: MYSQL
+  params:
+    host: 127.0.0.1
+    port: 3306
+    user: reporter
+    password: secret
+    database: reports

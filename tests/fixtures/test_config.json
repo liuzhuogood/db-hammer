@@ -1,0 +1,20 @@
+{
+  "connections": {
+    "default_sqlite": {
+      "name": "default_sqlite",
+      "type": "SQLITE",
+      "params": {
+        "database": ":memory:"
+      },
+      "auto_connect": false,
+      "pool_size": 1
+    }
+  },
+  "default_connection": "default_sqlite",
+  "auth": {
+    "api_keys": ["test-key"],
+    "jwt_secret": "test-secret",
+    "token_expire_seconds": 3600,
+    "allow_anonymous": false
+  }
+}

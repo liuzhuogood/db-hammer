@@ -1,0 +1,5 @@
+default_sqlite:
+  name: default_sqlite
+  type: SQLITE
+  params:
+    database: ":memory:"

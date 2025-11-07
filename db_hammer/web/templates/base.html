@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8" />
+    <title>db-hammer MCP 管理</title>
+    <link rel="stylesheet" href="{{ url_for('mcp_web.static', filename='css/config.css') }}" />
+</head>
+<body>
+<header class="page-header">
+    <h1>db-hammer MCP 控制台</h1>
+</header>
+<main>
+    {% block content %}{% endblock %}
+</main>
+<script src="{{ url_for('mcp_web.static', filename='js/config.js') }}"></script>
+</body>
+</html>
